@@ -5,4 +5,7 @@
 
   <five:registerPackage package="." initialize=".initialize" />
 
+  <utility provides=".interfaces.IMollieIdeal"
+           factory=".ideal.MollieIdeal" />
+
 </configure>
