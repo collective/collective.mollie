@@ -6,19 +6,20 @@ version = '0.1'
 setup(name='collective.mollie',
       version=version,
       description="Python wrapper for the Mollie API",
-      long_description=open("README.txt").read() + "\n" +
+      long_description=open("README.rst").read() + "\n" +
                        open(os.path.join("docs", "HISTORY.txt")).read(),
       # Get more strings from
       # http://pypi.python.org/pypi?:action=list_classifiers
       classifiers=[
         "Framework :: Plone",
+        "Framework :: Plone :: 4.1",
         "Programming Language :: Python",
         ],
-      keywords='',
-      author='',
-      author_email='',
-      url='http://svn.plone.org/svn/collective/',
-      license='GPL',
+      keywords='ideal mollie plone',
+      author='Edition1',
+      author_email='info@edition.nl',
+      url='https://github.com/collective/collective.mollie',
+      license='GPLv2',
       packages=find_packages(exclude=['ez_setup']),
       namespace_packages=['collective', 'collective.mollie'],
       include_package_data=True,
