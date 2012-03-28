@@ -6,10 +6,14 @@ from collective.mollie.testing import COLLECTIVE_MOLLIE_INTEGRATION_TESTING
 from collective.mollie.interfaces import IMollieIdeal
 
 
-class TestIntegration(unittest.TestCase):
+class TestIdealWrapper(unittest.TestCase):
 
     layer = COLLECTIVE_MOLLIE_INTEGRATION_TESTING
 
-    def test_utility(self):
-        """Test that the utility can be found."""
-        getUtility(IMollieIdeal)
+    def setUp(self):
+        self.ideal = getUtility(IMollieIdeal)
+
+    def test_banklist(self):
+        """Check the list of banks."""
+        banks = self.ideal.get_banks(testmode=True)
+        self.assertTrue(('9999', 'TBM Bank') in banks)
