@@ -21,7 +21,7 @@ setup(name='collective.mollie',
       url='https://github.com/collective/collective.mollie',
       license='GPLv2',
       packages=find_packages(exclude=['ez_setup']),
-      namespace_packages=['collective', 'collective.mollie'],
+      namespace_packages=['collective'],
       include_package_data=True,
       zip_safe=False,
       install_requires=[
