@@ -13,7 +13,7 @@ class TestIdealWrapper(unittest.TestCase):
     def setUp(self):
         self.ideal = getUtility(IMollieIdeal)
 
-    def test_banklist(self):
-        """Check the list of banks."""
+    def test_connection(self):
+        """Check the Mollie connection by retrieving list of banks."""
         banks = self.ideal.get_banks(testmode=True)
         self.assertTrue(('9999', 'TBM Bank') in banks)
