@@ -84,5 +84,11 @@ class MollieIdeal(object):
         answer = self._do_request(data, testmode=False)
         order = ET.XML(answer).find('order')
         transaction_id = order.find('transaction_id').text
+        confirm_amount = order.find('amount').text
+        confirm_currency = order.find('currency').text
         url = order.find('URL').text
+        if confirm_amount != amount:
+            raise ValueError('The amount for the payment is incorrect.')
+        if confirm_currency != 'EUR':
+            raise ValueError('The currency for the payment is incorrect.')
         return transaction_id, url
