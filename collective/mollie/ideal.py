@@ -49,3 +49,40 @@ class MollieIdeal(object):
             bank_name = bank.find('bank_name').text
             result.append((bank_id, bank_name))
         return result
+
+    def request_payment(self, partner_id, bank_id, amount, message, report_url,
+                        return_url, profile_key=None):
+        """Return transaction ID and URL to visit.
+
+        To send the request, a ``partner_id``, the Mollie account number,
+        is needed.
+
+        Furthermore, the ``bank_id``, ``amount`` and ``message`` are
+        obviously needed. Note that the ``amount`` is in **cents** and
+        the ``message`` can only be 29 characters (any more characters
+        are ignored).
+
+        The ``report_url`` is used by Mollie to report that the status
+        of the transaction can be requested. The ``return_url`` is
+        where the customer will be redirected to after the payment is
+        completed (either successfully or not).
+
+        Optionally, the ``profile_key`` can be used to select another
+        profile than the default profile for the ``partnerid``.
+        """
+        data = {
+            'a': 'fetch',
+            'partnerid': partner_id,
+            'amount': amount,
+            'bank_id': bank_id,
+            'description': message,
+            'reporturl': report_url,
+            'returnurl': return_url,
+        }
+        if profile_key:
+            data['profile_key'] = profile_key
+        answer = self._do_request(data, testmode=False)
+        order = ET.XML(answer).find('order')
+        transaction_id = order.find('transaction_id').text
+        url = order.find('URL').text
+        return transaction_id, url
