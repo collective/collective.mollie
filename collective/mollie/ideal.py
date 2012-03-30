@@ -15,12 +15,13 @@ class MollieIdeal(object):
     BASE_PATH = '/xml/ideal'
 
     def _do_request(self, data={}, testmode=False):
-        """Do the request and return the result.
+        """Call the Mollie API, send ``data`` and return the resulting XML.
 
-        @data is a dictionary with parameters to send.
+        The ``data`` parameter is a dictionary with parameters to send
+        to the Mollie API.
 
-        @testmode determines whether the 'testmode' flag is sent with
-        the request.
+        If ``testmode`` is True, a flag is sent along with the request
+        to signal this is a test.
         """
         connection = httplib.HTTPSConnection(self.API_HOST)
         if testmode:
@@ -34,10 +35,10 @@ class MollieIdeal(object):
     def get_banks(self, testmode=False):
         """Return a list of bank id and name tuples.
 
-        E.g.: [('0031, 'ABN AMRO'), ('0721', 'Postbank')]
+        Example: [('0031, 'ABN AMRO'), ('0721', 'Postbank')]
 
-        @testmode determines whether we get the actual list of banks
-        or only the test bank 'The Big Mollie Bank'.
+        The ``testmode`` determines whether we get the actual list of
+        banks or only the test bank 'The Big Mollie Bank'.
         """
         data = {'a': 'banklist'}
         answer = self._do_request(data, testmode)
