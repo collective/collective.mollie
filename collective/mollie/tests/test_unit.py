@@ -56,7 +56,7 @@ class TestIdealWrapper(unittest.TestCase):
         """Check basic (successfull) payment request."""
         # Setup the mock _do_request to return the right XML
         def side_effect(*args, **kwargs):
-            return mock_do_request('payment_request_good.xml')
+            return mock_do_request('request_payment_good.xml')
         self.ideal._do_request = MagicMock(
             side_effect=side_effect)
 
@@ -81,7 +81,7 @@ class TestIdealWrapper(unittest.TestCase):
     def test_payment_request_wrong_amount(self):
         """Check payment request with wrong amount in answer"""
         def side_effect(*args, **kwargs):
-            return mock_do_request('payment_request_wrong_amount.xml')
+            return mock_do_request('request_payment_wrong_amount.xml')
         self.ideal._do_request = MagicMock(
             side_effect=side_effect)
 
@@ -93,7 +93,7 @@ class TestIdealWrapper(unittest.TestCase):
     def test_payment_request_wrong_currency(self):
         """Check payment request with wrong currency in answer"""
         def side_effect(*args, **kwargs):
-            return mock_do_request('payment_request_wrong_currency.xml')
+            return mock_do_request('request_payment_wrong_currency.xml')
         self.ideal._do_request = MagicMock(
             side_effect=side_effect)
 
