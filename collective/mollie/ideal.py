@@ -51,7 +51,7 @@ class MollieIdeal(object):
         return result
 
     def request_payment(self, partner_id, bank_id, amount, message, report_url,
-                        return_url, profile_key=None):
+                        return_url, profile_key=None, testmode=False):
         """Return transaction ID and URL to visit.
 
         To send the request, a ``partner_id``, the Mollie account number,
@@ -81,7 +81,7 @@ class MollieIdeal(object):
         }
         if profile_key:
             data['profile_key'] = profile_key
-        answer = self._do_request(data, testmode=False)
+        answer = self._do_request(data, testmode=testmode)
         order = ET.XML(answer).find('order')
         transaction_id = order.find('transaction_id').text
         confirm_amount = order.find('amount').text
