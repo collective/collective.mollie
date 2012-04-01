@@ -1,0 +1,11 @@
+<?xml version="1.0" ?>
+<response>
+  <order>
+    <transaction_id>482d599bbcc7795727650330ad65fe9b</transaction_id>
+    <amount>123</amount>
+    <currency>EUR</currency>
+    <payed>false</payed>
+    <message>This iDEAL-order wasn't payed for, or was already checked by you. (We give payed=true only once, for your protection)</message>
+    <status>Open</status>
+  </order>
+</response>

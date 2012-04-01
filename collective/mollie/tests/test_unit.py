@@ -31,9 +31,11 @@ class TestIdealWrapper(unittest.TestCase):
         self.partner_id = '999999'
         self.bank_id = '9999'
         self.amount = '123'  # 1.23 Euro
+        self.currency = 'EUR'
         self.message = 'Testing payment'
         self.report_url = 'http://example.com/report_payment'
         self.return_url = 'http://example.com/return_url'
+        self.transaction_id = '482d599bbcc7795727650330ad65fe9b'
 
     def tearDown(self):
         self.ideal._do_request = self.ideal.old_do_request
@@ -101,3 +103,67 @@ class TestIdealWrapper(unittest.TestCase):
         self.assertRaises(ValueError, self.ideal.request_payment,
             self.partner_id, self.bank_id, self.amount, self.message,
             self.report_url, self.return_url)
+
+    def test_check_payment_request(self):
+        """Make sure we send the right parameters to Mollie"""
+        def side_effect(*args, **kwargs):
+            return mock_do_request('payment_success.xml')
+        self.ideal._do_request = MagicMock(
+            side_effect=side_effect)
+        self.ideal.check_payment(self.partner_id, self.transaction_id)
+        self.ideal._do_request.assert_called_with(
+            {'a': 'check',
+             'partnerid': self.partner_id,
+             'transaction_id': self.transaction_id,
+            },
+            testmode=False
+        )
+
+    def test_check_payment_success(self):
+        """Check the best case: a successfull payment."""
+        def side_effect(*args, **kwargs):
+            return mock_do_request('payment_success.xml')
+        self.ideal._do_request = MagicMock(
+            side_effect=side_effect)
+        result = self.ideal.check_payment(self.partner_id, self.transaction_id)
+        self.assertTrue(result['transaction_id'] == self.transaction_id)
+        self.assertTrue(result['amount'] == self.amount)
+        self.assertTrue(result['currency'] == self.currency)
+        self.assertTrue(result['payed'])
+        self.assertTrue(result['consumer_name'] == 'T. TEST')
+        self.assertTrue(result['consumer_account'] == '0123456789')
+        self.assertTrue(result['consumer_city'] == 'Testdorp')
+        self.assertTrue(result['status'] == 'Success')
+
+    def test_check_payment_open(self):
+        """Check payment which is still open."""
+        def side_effect(*args, **kwargs):
+            return mock_do_request('payment_open.xml')
+        self.ideal._do_request = MagicMock(
+            side_effect=side_effect)
+        result = self.ideal.check_payment(self.partner_id, self.transaction_id)
+        self.assertTrue(result['payed'] == False)
+        self.assertTrue(result['status'] == 'Open')
+        self.assertTrue('consumer_name' not in result)
+
+    def test_check_payment_checked_before(self):
+        """Check payment which has been checked before."""
+        def side_effect(*args, **kwargs):
+            return mock_do_request('payment_checked_before.xml')
+        self.ideal._do_request = MagicMock(
+            side_effect=side_effect)
+        result = self.ideal.check_payment(self.partner_id, self.transaction_id)
+        self.assertTrue(result['payed'] == False)
+        self.assertTrue(result['status'] == 'CheckedBefore')
+        self.assertTrue('consumer_name' not in result)
+
+    def test_check_payment_cancelled(self):
+        """Check payment which has been checked before."""
+        def side_effect(*args, **kwargs):
+            return mock_do_request('payment_cancelled.xml')
+        self.ideal._do_request = MagicMock(
+            side_effect=side_effect)
+        result = self.ideal.check_payment(self.partner_id, self.transaction_id)
+        self.assertTrue(result['payed'] == False)
+        self.assertTrue(result['status'] == 'Cancelled')
+        self.assertTrue('consumer_name' not in result)

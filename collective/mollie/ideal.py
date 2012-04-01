@@ -92,3 +92,47 @@ class MollieIdeal(object):
         if confirm_currency != 'EUR':
             raise ValueError('The currency for the payment is incorrect.')
         return transaction_id, url
+
+    def check_payment(self, partner_id, transaction_id, testmode=False):
+        """Check the status of the payment and return a dict with infomation.
+
+        With a Mollie account number, ``partner_id``, and the ID of a
+        transaction, ``transaction_id``, you can retieve the state of
+        said transaction.
+
+        The content of the return value depends on the status of the payment.
+
+        If, and only if, the payment succeeded, the return value also
+        contains information about consumer that payed.
+
+        Note that if you call this method too early and the state is
+        still 'Open' you are effectively never able to check the final
+        state of the transaction. This is because the status may only
+        be retrieved ONCE! Subsequent checks will always return a
+        status 'CheckedBefore' and appear not payed.
+
+        In other words: way until Mollie pinged the ``report_url``
+        which was sent with the ``request_payment`` method.
+        """
+        data = {
+            'a': 'check',
+            'partnerid': partner_id,
+            'transaction_id': transaction_id,
+        }
+        answer = self._do_request(data, testmode=testmode)
+        order_xml = ET.XML(answer).find('order')
+        result = {
+            'transaction_id': order_xml.find('transaction_id').text,
+            'amount': order_xml.find('amount').text,
+            'currency': order_xml.find('currency').text,
+            'payed': ('true' == order_xml.find('payed').text),
+            'status': order_xml.find('status').text,
+        }
+        consumer_xml = order_xml.find('consumer')
+        if consumer_xml:
+            result.update({
+                'consumer_name': consumer_xml.find('consumerName').text,
+                'consumer_account': consumer_xml.find('consumerAccount').text,
+                'consumer_city': consumer_xml.find('consumerCity').text,
+            })
+        return result
