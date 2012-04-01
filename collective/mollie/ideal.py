@@ -8,6 +8,10 @@ from collective.mollie.xml_parser import XmlDictConfig
 from collective.mollie.xml_parser import xml_string_to_dict
 
 
+class MollieAPIError(EnvironmentError):
+    """Error from the Mollie API"""
+
+
 class MollieIdeal(object):
     """A utility that wraps the Mollie iDeal API."""
     implements(IMollieIdeal)
@@ -45,6 +49,10 @@ class MollieIdeal(object):
         """
         result_str = self._do_request(data, testmode)
         result_dict = xml_string_to_dict(result_str)
+        if 'item' in result_dict and \
+           result_dict['item'].get('type') == 'error':
+            raise MollieAPIError(result_dict['item']['errorcode'],
+                                 result_dict['item']['message'])
         return result_dict
 
     def get_banks(self, testmode=False):

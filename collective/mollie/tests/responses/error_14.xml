@@ -1,0 +1,7 @@
+<?xml version="1.0" ?>
+<response>
+  <item type="error">
+    <errorcode>-14</errorcode>
+    <message>Minimum amount for an ideal transaction is EUR 1,18</message>
+  </item>
+</response>

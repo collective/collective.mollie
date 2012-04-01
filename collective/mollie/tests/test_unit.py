@@ -5,8 +5,9 @@ from mock import MagicMock
 
 from zope.component import getUtility
 
-from collective.mollie.testing import COLLECTIVE_MOLLIE_INTEGRATION_TESTING
+from collective.mollie.ideal import MollieAPIError
 from collective.mollie.interfaces import IMollieIdeal
+from collective.mollie.testing import COLLECTIVE_MOLLIE_INTEGRATION_TESTING
 
 
 def mock_do_request(filename):
@@ -111,6 +112,18 @@ class TestIdealWrapper(unittest.TestCase):
         # We expect an error because the currency is wrong.
         self.assertRaises(ValueError, self.ideal.request_payment,
             self.partner_id, self.bank_id, self.amount, self.message,
+            self.report_url, self.return_url)
+
+    def test_payment_request_too_low_amount(self):
+        """Check payment request with too low amount."""
+        def side_effect(*args, **kwargs):
+            return mock_do_request('error_14.xml')
+        self.ideal._do_request = MagicMock(
+            side_effect=side_effect)
+
+        # We expect an error because the amount it too low.
+        self.assertRaises(MollieAPIError, self.ideal.request_payment,
+            self.partner_id, self.bank_id, 1, self.message,
             self.report_url, self.return_url)
 
     def test_check_payment_request(self):
