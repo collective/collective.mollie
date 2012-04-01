@@ -1,10 +1,11 @@
 import httplib
 import urllib
 
-from elementtree import ElementTree as ET
 from zope.interface import implements
 
 from collective.mollie.interfaces import IMollieIdeal
+from collective.mollie.xml_parser import XmlDictConfig
+from collective.mollie.xml_parser import xml_string_to_dict
 
 
 class MollieIdeal(object):
@@ -15,13 +16,15 @@ class MollieIdeal(object):
     BASE_PATH = '/xml/ideal'
 
     def _do_request(self, data={}, testmode=False):
-        """Call the Mollie API, send ``data`` and return the resulting XML.
+        """Return XML after performing the actual call to the Mollie API.
 
         The ``data`` parameter is a dictionary with parameters to send
         to the Mollie API.
 
         If ``testmode`` is True, a flag is sent along with the request
         to signal this is a test.
+
+        The return value is a string.
         """
         connection = httplib.HTTPSConnection(self.API_HOST)
         if testmode:
@@ -32,6 +35,18 @@ class MollieIdeal(object):
             {'Content-type': 'application/x-www-form-urlencoded'})
         return connection.getresponse().read()
 
+    def _call_mollie(self, data, testmode=False):
+        """Call the Mollie API and return a dict with the result.
+
+        The ``data`` dict should contain all the parameters we will
+        send to Mollie.
+
+        If ``testmode`` is True, we set the test mode flag.
+        """
+        result_str = self._do_request(data, testmode)
+        result_dict = xml_string_to_dict(result_str)
+        return result_dict
+
     def get_banks(self, testmode=False):
         """Return a list of bank id and name tuples.
 
@@ -41,14 +56,13 @@ class MollieIdeal(object):
         banks or only the test bank 'The Big Mollie Bank'.
         """
         data = {'a': 'banklist'}
-        answer = self._do_request(data, testmode)
-        parsed_xml = ET.XML(answer)
-        result = []
-        for bank in parsed_xml.getiterator('bank'):
-            bank_id = bank.find('bank_id').text
-            bank_name = bank.find('bank_name').text
-            result.append((bank_id, bank_name))
-        return result
+        answer = self._call_mollie(data, testmode)
+        banks = answer.get('bank', None)
+        if not banks:
+            return []
+        elif isinstance(banks, XmlDictConfig):
+            banks = [banks]
+        return [(b['bank_id'], b['bank_name']) for b in banks]
 
     def request_payment(self, partner_id, bank_id, amount, message, report_url,
                         return_url, profile_key=None, testmode=False):
@@ -81,17 +95,13 @@ class MollieIdeal(object):
         }
         if profile_key:
             data['profile_key'] = profile_key
-        answer = self._do_request(data, testmode=testmode)
-        order = ET.XML(answer).find('order')
-        transaction_id = order.find('transaction_id').text
-        confirm_amount = order.find('amount').text
-        confirm_currency = order.find('currency').text
-        url = order.find('URL').text
-        if confirm_amount != amount:
+        answer = self._call_mollie(data, testmode=testmode)
+        order = answer.get('order')
+        if order.get('amount') != amount:
             raise ValueError('The amount for the payment is incorrect.')
-        if confirm_currency != 'EUR':
+        if order.get('currency') != 'EUR':
             raise ValueError('The currency for the payment is incorrect.')
-        return transaction_id, url
+        return order.get('transaction_id'), order.get('URL')
 
     def check_payment(self, partner_id, transaction_id, testmode=False):
         """Check the status of the payment and return a dict with infomation.
@@ -119,20 +129,18 @@ class MollieIdeal(object):
             'partnerid': partner_id,
             'transaction_id': transaction_id,
         }
-        answer = self._do_request(data, testmode=testmode)
-        order_xml = ET.XML(answer).find('order')
-        result = {
-            'transaction_id': order_xml.find('transaction_id').text,
-            'amount': order_xml.find('amount').text,
-            'currency': order_xml.find('currency').text,
-            'payed': ('true' == order_xml.find('payed').text),
-            'status': order_xml.find('status').text,
-        }
-        consumer_xml = order_xml.find('consumer')
-        if consumer_xml:
-            result.update({
-                'consumer_name': consumer_xml.find('consumerName').text,
-                'consumer_account': consumer_xml.find('consumerAccount').text,
-                'consumer_city': consumer_xml.find('consumerCity').text,
-            })
-        return result
+        answer = self._call_mollie(data, testmode=testmode)
+        order = answer['order']
+        if order.get('payed') == 'true':
+            order['payed'] = True
+        else:
+            order['payed'] = False
+        if order.get('consumer'):
+            # 'Normalize' keys
+            mapping = [('consumerName', 'name'),
+                       ('consumerAccount', 'account'),
+                       ('consumerCity', 'city')]
+            for old, new in mapping:
+                order['consumer'][new] = order['consumer'][old]
+                del order['consumer'][old]
+        return order

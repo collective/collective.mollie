@@ -72,7 +72,7 @@ class TestIdealWrapper(unittest.TestCase):
             'bank_id': self.bank_id, 'description': self.message,
             'reporturl': self.report_url, 'returnurl': self.return_url
             },
-            testmode=False
+            False
         )
 
     def test_basic_payment_request(self):
@@ -125,7 +125,7 @@ class TestIdealWrapper(unittest.TestCase):
              'partnerid': self.partner_id,
              'transaction_id': self.transaction_id,
             },
-            testmode=False
+            False
         )
 
     def test_check_payment_success(self):
@@ -139,9 +139,10 @@ class TestIdealWrapper(unittest.TestCase):
         self.assertTrue(result['amount'] == self.amount)
         self.assertTrue(result['currency'] == self.currency)
         self.assertTrue(result['payed'])
-        self.assertTrue(result['consumer_name'] == 'T. TEST')
-        self.assertTrue(result['consumer_account'] == '0123456789')
-        self.assertTrue(result['consumer_city'] == 'Testdorp')
+        self.assertTrue('consumer' in result)
+        self.assertTrue(result['consumer']['name'] == 'T. TEST')
+        self.assertTrue(result['consumer']['account'] == '0123456789')
+        self.assertTrue(result['consumer']['city'] == 'Testdorp')
         self.assertTrue(result['status'] == 'Success')
 
     def test_check_payment_open(self):
