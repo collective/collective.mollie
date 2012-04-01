@@ -6,7 +6,7 @@ version = open(os.path.join(
 
 setup(name='collective.mollie',
       version=version,
-      description="Python wrapper for the Mollie API",
+      description="Wrapper for the Mollie iDeal API",
       long_description=open("README.rst").read() + "\n" +
                        open(os.path.join("docs", "HISTORY.txt")).read(),
       # Get more strings from
@@ -19,7 +19,7 @@ setup(name='collective.mollie',
       keywords='ideal mollie plone',
       author='Edition1',
       author_email='info@edition.nl',
-      url='https://github.com/collective/collective.mollie',
+      url='http://github.com/collective/collective.mollie',
       license='GPLv2',
       packages=find_packages(exclude=['ez_setup']),
       namespace_packages=['collective'],
