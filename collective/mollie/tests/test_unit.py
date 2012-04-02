@@ -5,9 +5,12 @@ from mock import MagicMock
 
 from zope.component import getUtility
 
+from collective.mollie.adapter import MollieIdealPayment
 from collective.mollie.ideal import MollieAPIError
 from collective.mollie.interfaces import IMollieIdeal
+from collective.mollie.interfaces import IMollieIdealPayment
 from collective.mollie.testing import COLLECTIVE_MOLLIE_INTEGRATION_TESTING
+from collective.mollie.testing import Foo
 
 
 def mock_do_request(filename):
@@ -190,3 +193,126 @@ class TestIdealWrapper(unittest.TestCase):
         self.assertTrue(result['payed'] == False)
         self.assertTrue(result['status'] == 'Cancelled')
         self.assertTrue('consumer_name' not in result)
+
+
+class TestPaymentAdapter(unittest.TestCase):
+    """Test the Mollie iDeal Payment adapter."""
+
+    layer = COLLECTIVE_MOLLIE_INTEGRATION_TESTING
+
+    def setUp(self):
+        self.foo = Foo()
+        self.adapted = IMollieIdealPayment(self.foo)
+        self.adapted.ideal_wrapper.old_do_request = \
+            self.adapted.ideal_wrapper._do_request
+        self.partner_id = '999999'
+        self.bank_id = '9999'
+        self.amount = '123'  # 1.23 Euro
+        self.currency = 'EUR'
+        self.message = 'Testing payment'
+        self.report_url = 'http://example.com/report_payment'
+        self.return_url = 'http://example.com/return_url'
+        self.transaction_id = '482d599bbcc7795727650330ad65fe9b'
+
+    def tearDown(self):
+        self.adapted.ideal_wrapper._do_request = \
+            self.adapted.ideal_wrapper.old_do_request
+
+    def test_adapter(self):
+        """Test whether we can adapt."""
+        self.assertTrue(isinstance(self.adapted, MollieIdealPayment))
+
+    def test_get_banks(self):
+        """Check we can retrieve the banks from Mollie."""
+        def side_effect(*args, **kwargs):
+            return mock_do_request('banks.xml')
+        self.adapted.ideal_wrapper._do_request = MagicMock(
+            side_effect=side_effect)
+        banks = self.adapted.get_banks()
+        self.assertTrue(('0021', 'Rabobank') in banks)
+
+    def test_get_payment_url(self):
+        """Check we can get a payment URL and the transaction ID is stored."""
+        def side_effect(*args, **kwargs):
+            return mock_do_request('request_payment_good.xml')
+        self.adapted.ideal_wrapper._do_request = MagicMock(
+            side_effect=side_effect)
+        url = self.adapted.get_payment_url(self.partner_id, self.bank_id,
+            self.amount, self.message, self.report_url, self.return_url)
+        # The right URL is returned
+        self.assertTrue(url == 'https://mijn.postbank.nl/internetbankieren/' +
+                               'SesamLoginServlet?sessie=ideal&trxid=' +
+                               '003123456789123&random=123456789abcdefgh')
+        # The right transaction information is stored.
+        self.assertTrue(self.adapted.transaction_id == self.transaction_id)
+        self.assertTrue(self.adapted.amount == self.amount)
+        self.assertTrue(self.adapted._partner_id == self.partner_id)
+
+    def test_get_payment_status_success(self):
+        """Check the best case: a successfull payment."""
+        def side_effect(*args, **kwargs):
+            return mock_do_request('request_payment_good.xml')
+        self.adapted.ideal_wrapper._do_request = MagicMock(
+            side_effect=side_effect)
+        self.adapted.get_payment_url(self.partner_id, self.bank_id,
+            self.amount, self.message, self.report_url, self.return_url)
+
+        def side_effect2(*args, **kwargs):
+            return mock_do_request('payment_success.xml')
+        self.adapted.ideal_wrapper._do_request = MagicMock(
+            side_effect=side_effect2)
+        result = self.adapted.get_payment_status()
+        self.assertTrue(result == 'Success')
+        self.assertTrue(self.adapted.payed)
+        self.assertTrue(self.adapted.consumer['name'] == 'T. TEST')
+        self.assertTrue(self.adapted.consumer['account'] == '0123456789')
+        self.assertTrue(self.adapted.consumer['city'] == 'Testdorp')
+        self.assertTrue(self.adapted.status == 'Success')
+        self.assertTrue(self.adapted.last_status == 'Success')
+
+    def test_get_payment_status_cancelled(self):
+        """Check a cancelled payment."""
+        def side_effect(*args, **kwargs):
+            return mock_do_request('request_payment_good.xml')
+        self.adapted.ideal_wrapper._do_request = MagicMock(
+            side_effect=side_effect)
+        self.adapted.get_payment_url(self.partner_id, self.bank_id,
+            self.amount, self.message, self.report_url, self.return_url)
+
+        def side_effect2(*args, **kwargs):
+            return mock_do_request('payment_cancelled.xml')
+        self.adapted.ideal_wrapper._do_request = MagicMock(
+            side_effect=side_effect2)
+        self.adapted.get_payment_status()
+        self.assertFalse(self.adapted.payed)
+        self.assertTrue(self.adapted.consumer is None)
+        self.assertTrue(self.adapted.status == 'Cancelled')
+
+    def test_get_payment_status_checked_before(self):
+        """Check payment twice: teh result is saved."""
+        def side_effect(*args, **kwargs):
+            return mock_do_request('request_payment_good.xml')
+        self.adapted.ideal_wrapper._do_request = MagicMock(
+            side_effect=side_effect)
+        self.adapted.get_payment_url(self.partner_id, self.bank_id,
+            self.amount, self.message, self.report_url, self.return_url)
+
+        # We first check the success.
+        def side_effect2(*args, **kwargs):
+            return mock_do_request('payment_success.xml')
+        self.adapted.ideal_wrapper._do_request = MagicMock(
+            side_effect=side_effect2)
+        result = self.adapted.get_payment_status()
+        self.assertTrue(result == 'Success')
+
+        # A second check will return 'CheckedBefore' but the payment
+        # status will be saved.
+        def side_effect3(*args, **kwargs):
+            return mock_do_request('payment_checked_before.xml')
+        self.adapted.ideal_wrapper._do_request = MagicMock(
+            side_effect=side_effect3)
+        result = self.adapted.get_payment_status()
+        self.assertTrue(result == 'CheckedBefore')
+        self.assertTrue(self.adapted.payed)
+        self.assertTrue(self.adapted.status == 'Success')
+        self.assertTrue(self.adapted.last_status == 'CheckedBefore')

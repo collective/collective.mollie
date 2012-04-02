@@ -118,6 +118,47 @@ customer that the status is unknown but that the payment will be
 automatically processed once the status is final.
 
 
+Plone integration
+=================
+
+If you want to integrate iDeal payments in your Plone project, you can
+use the iDeal wrapper as defined in the MollieIdeal utility. However,
+you can also use the adapter defined in the ``MollieIdealPayment``
+class.
+
+You can adapt any object that implements the ``IAttributeAnnotatable``
+interface. For instance::
+
+    >>> from zope.annotation import IAttributeAnnotatable
+    >>> from persistent import Persistent
+    >>> class Foo(Persistent):
+    ...     implements(IAttributeAnnotatable)
+    >>> foo = Foo()
+
+This object ``foo`` can now be adapted::
+
+    >>> from collective.mollie.interfaces import IMollieIdealPayment
+    >>> foo_payment = IMollieIdealPayment(foo)
+
+And we can request banks, a payment URL and the payment status::
+
+    >>> foo_payment.get_banks()
+    [('0031', 'ABN AMRO'), ...]
+    >>> foo_payment.get_payment_url(partner_id='999999',
+    ...     bank_id='9999', amount='123', message='The message',
+    ...     report_url='http://example.com/report',
+    ...     return_url='http://example.com/return',
+    ...     profile_key='999999', testmode=False)
+    'http://....'
+    >>> foo_payment.get_payment_status()
+    'Success'
+
+Note that we do not have to repeat the ``partner_id`` or
+``transaction_id`` when requesting the payment status. This
+information was stored when we requested the payment url and is reused
+for the ``get_payment_status`` call.
+
+
 More information
 ================
 

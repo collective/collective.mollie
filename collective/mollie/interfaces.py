@@ -1,4 +1,4 @@
-from zope.interface import Interface
+from zope.interface import Interface, Attribute
 
 
 class IMollieIdeal(Interface):
@@ -55,3 +55,35 @@ class IMollieIdeal(Interface):
         In other words: way until Mollie pinged the ``report_url``
         which was sent with the ``request_payment`` method.
         """
+
+
+class IMollieIdealPayment(Interface):
+    """Model to store payment information."""
+
+    last_update = Attribute('Date/time of last change of the data.')
+    transaction_id = Attribute('Transaction ID')
+    amount = Attribute('Amount')
+    currency = Attribute('Currency')
+    payed = Attribute('Payed')
+    consumer = Attribute('Consumer information')
+    status = Attribute('Status')
+    last_status = Attribute('Last status')
+
+    def get_banks():
+        """Return a list of bank id and name tuples.
+
+        E.g.: [('0031, 'ABN AMRO'), ('0721', 'Postbank')]
+
+        @testmode determines whether we get the actual list of banks
+        or only the test bank 'The Big Mollie Bank'.
+        """
+
+    def get_payment_url(partner_id, bank_id, amount, message,
+                        report_url, return_url, profile_key=None):
+        """Return the URL to redirect the customer to to do the payment.
+
+        Also internally store the data for later reference.
+        """
+
+    def get_payment_status():
+        """Retrieve and return the payment status."""

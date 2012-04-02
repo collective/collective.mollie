@@ -8,4 +8,6 @@
   <utility provides=".interfaces.IMollieIdeal"
            factory=".ideal.MollieIdeal" />
 
+  <adapter factory=".adapter.MollieIdealPayment" />
+
 </configure>
