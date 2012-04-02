@@ -6,7 +6,7 @@ from zope.component import adapts
 from zope.interface import implements
 from zope.component import getUtility
 
-from collective.mollie.config import ANNOTATION_KEY
+from collective.mollie.config import IDEAL_PAYMENT_ANNOTATION_KEY
 from collective.mollie.interfaces import IMollieIdeal
 from collective.mollie.interfaces import IMollieIdealPayment
 
@@ -18,10 +18,10 @@ class MollieIdealPayment(object):
     def __init__(self, context):
         self.ideal_wrapper = getUtility(IMollieIdeal)
         annotations = IAnnotations(context)
-        self._metadata = annotations.get(ANNOTATION_KEY, None)
+        self._metadata = annotations.get(IDEAL_PAYMENT_ANNOTATION_KEY, None)
         if self._metadata is None:
             self._metadata = PersistentMapping()
-            annotations[ANNOTATION_KEY] = self._metadata
+            annotations[IDEAL_PAYMENT_ANNOTATION_KEY] = self._metadata
 
     # Properties
 
