@@ -3,7 +3,9 @@ import unittest2 as unittest
 
 from mock import MagicMock
 
+from zope.component import getMultiAdapter
 from zope.component import getUtility
+from zope.publisher.browser import TestRequest
 
 from collective.mollie.adapter import MollieIdealPayment
 from collective.mollie.ideal import MollieAPIError
@@ -316,3 +318,62 @@ class TestPaymentAdapter(unittest.TestCase):
         self.assertTrue(self.adapted.payed)
         self.assertTrue(self.adapted.status == 'Success')
         self.assertTrue(self.adapted.last_status == 'CheckedBefore')
+
+
+class TestReportView(unittest.TestCase):
+
+    layer = COLLECTIVE_MOLLIE_INTEGRATION_TESTING
+
+    def _side_effect(*args, **kwargs):
+        return mock_do_request('payment_success.xml')
+
+    def setUp(self):
+        self.ideal = getUtility(IMollieIdeal)
+        self.ideal.old_do_request = self.ideal._do_request
+        self.ideal._do_request = MagicMock(
+            side_effect=self._side_effect)
+
+        self.foo = Foo()
+        self.adapted = IMollieIdealPayment(self.foo)
+        self.adapted._partner_id = '999999'
+        self.adapted.transaction_id = '482d599bbcc7795727650330ad65fe9b'
+
+    def tearDown(self):
+        self.ideal._do_request = self.ideal.old_do_request
+
+    def test_missing_transaction_id(self):
+        """Check missing transaction_id is invalid."""
+        request = TestRequest()
+        report_payment_view = getMultiAdapter((self.foo, request),
+                                              name='report_payment_status')
+        result = report_payment_view()
+        self.assertTrue(result == 'Wrong or missing transaction ID')
+        self.assertTrue(request.response.getStatus() == 403)
+
+    def test_wrong_transaction_id(self):
+        """Check wrong transaction_id is invalid."""
+        request = TestRequest(form=dict(transaction_id='deadbeef'))
+        report_payment_view = getMultiAdapter((self.foo, request),
+                                              name='report_payment_status')
+        result = report_payment_view()
+        self.assertTrue(result == 'Wrong or missing transaction ID')
+        self.assertTrue(request.response.getStatus() == 403)
+
+    def test_correct_response(self):
+        """Check the response if the right transaction_id is received."""
+        request = TestRequest(
+            form=dict(transaction_id=self.adapted.transaction_id))
+        report_payment_view = getMultiAdapter((self.foo, request),
+                                              name='report_payment_status')
+        result = report_payment_view()
+        self.assertTrue(result == 'OK')
+        self.assertTrue(request.response.getStatus() == 200)
+
+    def test_correct_processing(self):
+        """Check the payment has indeed been processed."""
+        request = TestRequest(
+            form=dict(transaction_id=self.adapted.transaction_id))
+        report_payment_view = getMultiAdapter((self.foo, request),
+                                              name='report_payment_status')
+        report_payment_view()
+        self.assertTrue(self.adapted.payed)

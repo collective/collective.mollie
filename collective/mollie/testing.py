@@ -18,6 +18,8 @@ class CollectiveMollie(PloneSandboxLayer):
         import collective.mollie
         xmlconfig.file('configure.zcml', collective.mollie,
                        context=configurationContext)
+        xmlconfig.file('browser.zcml', collective.mollie.tests,
+                       context=configurationContext)
 
 COLLECTIVE_MOLLIE_FIXTURE = CollectiveMollie()
 COLLECTIVE_MOLLIE_INTEGRATION_TESTING = IntegrationTesting(

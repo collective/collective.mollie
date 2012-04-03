@@ -122,9 +122,15 @@ Plone integration
 =================
 
 If you want to integrate iDeal payments in your Plone project, you can
-use the iDeal wrapper as defined in the MollieIdeal utility. However,
-you can also use the adapter defined in the ``MollieIdealPayment``
-class.
+use the iDeal wrapper as defined in the ``MollieIdeal`` utility which
+was described above.
+
+Adapter
+-------
+
+However, you can also use the adapter defined in the
+``MollieIdealPayment`` class. By using this adapter, information about
+the payment is persistently stored on the adapted objects.
 
 You can adapt any object that implements the ``IAttributeAnnotatable``
 interface. For instance::
@@ -158,11 +164,52 @@ Note that we do not have to repeat the ``partner_id`` or
 information was stored when we requested the payment url and is reused
 for the ``get_payment_status`` call.
 
+As stated earlier, the payment information is stored persistently::
+
+    >>> foo_payment.payed
+    True
+    >>> foo_payment.amount
+    '123'
+    >>> foo_payment.consumer
+    {'name': 'T. TEST',
+     'account': '0123456789',
+     'city': 'Testdorp'
+     }
+
+
+Report URL
+----------
+
+As described in the section `Check the payment`_, you have to wait with
+checking the payment status until Mollie has pinged the
+``report_url``.
+
+You can write your own view, but you can also use the one provided by
+``collective.mollie``: the ``ReportPaymentStatusView`` class. This
+view checks whether the ``transaction_id`` from the request matches
+the one stored on the object. If it does, the payment status of the
+object is checked immediately.
+
+To use the view, first register it::
+
+  <browser:page
+      for="*"
+      class="collective.mollie.browser.report.ReportPaymentStatusView"
+      name="report_payment_status"
+      permission="zope2.View"
+      />
+
+(You probably should only register the view for specific
+interfaces. And obviously you can give it any name you want.)
+
+Then use ``<object>/absolute_url/@@report_payment_status`` as the
+``report_url`` when requesting the payment URL.
+
 
 More information
 ================
 
-For details about the Mollie ideal API, see its documentation_.
+For details about the Mollie iDeal API, see its documentation_.
 
 .. _documentation: http://www.mollie.nl/support/documentatie/betaaldiensten/ideal/
 
