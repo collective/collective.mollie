@@ -7,7 +7,10 @@ The code of the XmlListConfig and XmlDictConfig classes came from:
  - http://code.activestate.com/recipes/410469-xml-as-dictionary/#c3
 """
 
-from xml.etree import ElementTree
+try:
+    from xml.etree import ElementTree
+except:
+    from elementtree import ElementTree
 
 
 def xml_string_to_dict(text):
