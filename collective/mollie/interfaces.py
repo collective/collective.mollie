@@ -87,3 +87,9 @@ class IMollieIdealPayment(Interface):
 
     def get_payment_status():
         """Retrieve and return the payment status."""
+
+
+class IMollieIdealPaymentEvent(Interface):
+    """An event signalling that Mollie an iDeal payment has been processed."""
+
+    obj = Attribute('The object the payment was processed for.')

@@ -205,6 +205,10 @@ interfaces. And obviously you can give it any name you want.)
 Then use ``<object>/absolute_url/@@report_payment_status`` as the
 ``report_url`` when requesting the payment URL.
 
+The view also emits an event: ``MollieIdealPaymentEvent``. So by
+implementing a subscriber in your own package, you can get a
+notification if the payment information of an object is updated.
+
 
 More information
 ================

@@ -1,5 +1,7 @@
+from zope.event import notify
 from zope.publisher.browser import BrowserView
 
+from collective.mollie.events import MollieIdealPaymentEvent
 from collective.mollie.interfaces import IMollieIdealPayment
 
 
@@ -20,5 +22,6 @@ class ReportPaymentStatusView(BrowserView):
             return message
 
         adapted.get_payment_status()
+        notify(MollieIdealPaymentEvent(self.context))
         self.request.response.setStatus(200)
         return 'OK'

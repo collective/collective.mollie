@@ -3,6 +3,7 @@ import unittest2 as unittest
 
 from mock import MagicMock
 
+from zope.component import eventtesting
 from zope.component import getMultiAdapter
 from zope.component import getUtility
 from zope.publisher.browser import TestRequest
@@ -11,6 +12,7 @@ from collective.mollie.adapter import MollieIdealPayment
 from collective.mollie.ideal import MollieAPIError
 from collective.mollie.interfaces import IMollieIdeal
 from collective.mollie.interfaces import IMollieIdealPayment
+from collective.mollie.interfaces import IMollieIdealPaymentEvent
 from collective.mollie.testing import COLLECTIVE_MOLLIE_INTEGRATION_TESTING
 from collective.mollie.testing import Foo
 
@@ -337,9 +339,11 @@ class TestReportView(unittest.TestCase):
         self.adapted = IMollieIdealPayment(self.foo)
         self.adapted._partner_id = '999999'
         self.adapted.transaction_id = '482d599bbcc7795727650330ad65fe9b'
+        eventtesting.setUp()
 
     def tearDown(self):
         self.ideal._do_request = self.ideal.old_do_request
+        eventtesting.clearEvents()
 
     def test_missing_transaction_id(self):
         """Check missing transaction_id is invalid."""
@@ -377,3 +381,14 @@ class TestReportView(unittest.TestCase):
                                               name='report_payment_status')
         report_payment_view()
         self.assertTrue(self.adapted.payed)
+
+    def test_payment_event(self):
+        """Check that the MollieIdealPaymentEvent was fired."""
+        request = TestRequest(
+            form=dict(transaction_id=self.adapted.transaction_id))
+        report_payment_view = getMultiAdapter((self.foo, request),
+                                              name='report_payment_status')
+        report_payment_view()
+        payment_events = [event for event in eventtesting.getEvents()
+                          if IMollieIdealPaymentEvent.providedBy(event)]
+        self.assertTrue(len(payment_events) > 0)
