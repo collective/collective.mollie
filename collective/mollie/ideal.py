@@ -18,20 +18,22 @@ class MollieIdeal(object):
 
     API_HOST = 'secure.mollie.nl'
     BASE_PATH = '/xml/ideal'
+    TESTMODE = False
 
-    def _do_request(self, data={}, testmode=False):
+    def _do_request(self, data={}):
         """Return XML after performing the actual call to the Mollie API.
 
         The ``data`` parameter is a dictionary with parameters to send
         to the Mollie API.
 
-        If ``testmode`` is True, a flag is sent along with the request
-        to signal this is a test.
+        If the TESTMODE flag is set to True, the request to Mollie
+        will also contain the 'testmode' parameter (which will be set
+        to 'true') to signal this is a test.
 
         The return value is a string.
         """
         connection = httplib.HTTPSConnection(self.API_HOST)
-        if testmode:
+        if self.TESTMODE:
             data['testmode'] = 'true'
         encoded_data = urllib.urlencode(data)
         connection.request(
@@ -39,15 +41,14 @@ class MollieIdeal(object):
             {'Content-type': 'application/x-www-form-urlencoded'})
         return connection.getresponse().read()
 
-    def _call_mollie(self, data, testmode=False):
+    def _call_mollie(self, data,):
         """Call the Mollie API and return a dict with the result.
 
         The ``data`` dict should contain all the parameters we will
         send to Mollie.
 
-        If ``testmode`` is True, we set the test mode flag.
         """
-        result_str = self._do_request(data, testmode)
+        result_str = self._do_request(data)
         result_dict = xml_string_to_dict(result_str)
         if 'item' in result_dict and \
            result_dict['item'].get('type') == 'error':
@@ -55,16 +56,13 @@ class MollieIdeal(object):
                                  result_dict['item']['message'])
         return result_dict
 
-    def get_banks(self, testmode=False):
+    def get_banks(self):
         """Return a list of bank id and name tuples.
 
         Example: [('0031, 'ABN AMRO'), ('0721', 'Postbank')]
-
-        The ``testmode`` determines whether we get the actual list of
-        banks or only the test bank 'The Big Mollie Bank'.
         """
         data = {'a': 'banklist'}
-        answer = self._call_mollie(data, testmode)
+        answer = self._call_mollie(data)
         banks = answer.get('bank', None)
         if not banks:
             return []
@@ -73,7 +71,7 @@ class MollieIdeal(object):
         return [(b['bank_id'], b['bank_name']) for b in banks]
 
     def request_payment(self, partner_id, bank_id, amount, message, report_url,
-                        return_url, profile_key=None, testmode=False):
+                        return_url, profile_key=None):
         """Return transaction ID and URL to visit.
 
         To send the request, a ``partner_id``, the Mollie account number,
@@ -103,7 +101,7 @@ class MollieIdeal(object):
         }
         if profile_key:
             data['profile_key'] = profile_key
-        answer = self._call_mollie(data, testmode=testmode)
+        answer = self._call_mollie(data)
         order = answer.get('order')
         if order.get('amount') != amount:
             raise ValueError('The amount for the payment is incorrect.')
@@ -111,7 +109,7 @@ class MollieIdeal(object):
             raise ValueError('The currency for the payment is incorrect.')
         return order.get('transaction_id'), order.get('URL')
 
-    def check_payment(self, partner_id, transaction_id, testmode=False):
+    def check_payment(self, partner_id, transaction_id):
         """Check the status of the payment and return a dict with infomation.
 
         With a Mollie account number, ``partner_id``, and the ID of a
@@ -137,7 +135,7 @@ class MollieIdeal(object):
             'partnerid': partner_id,
             'transaction_id': transaction_id,
         }
-        answer = self._call_mollie(data, testmode=testmode)
+        answer = self._call_mollie(data)
         order = answer['order']
         if order.get('payed') == 'true':
             order['payed'] = True

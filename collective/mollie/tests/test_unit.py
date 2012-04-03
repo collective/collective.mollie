@@ -55,7 +55,7 @@ class TestIdealWrapper(unittest.TestCase):
         self.ideal._do_request = MagicMock(
             side_effect=side_effect)
         self.ideal.get_banks()
-        self.ideal._do_request.assert_called_with({'a': 'banklist'}, False)
+        self.ideal._do_request.assert_called_with({'a': 'banklist'})
 
     def test_banklist(self):
         """Check the list of banks."""
@@ -79,9 +79,7 @@ class TestIdealWrapper(unittest.TestCase):
             {'a': 'fetch', 'partnerid': self.partner_id, 'amount': self.amount,
             'bank_id': self.bank_id, 'description': self.message,
             'reporturl': self.report_url, 'returnurl': self.return_url
-            },
-            False
-        )
+            })
 
     def test_basic_payment_request(self):
         """Check basic (successfull) payment request."""
@@ -144,9 +142,7 @@ class TestIdealWrapper(unittest.TestCase):
             {'a': 'check',
              'partnerid': self.partner_id,
              'transaction_id': self.transaction_id,
-            },
-            False
-        )
+            })
 
     def test_check_payment_success(self):
         """Check the best case: a successfull payment."""

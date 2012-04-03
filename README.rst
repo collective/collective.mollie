@@ -36,16 +36,26 @@ before you do the payment::
     >>> ideal_wrapper.get_banks()
     [('0031', 'ABN AMRO'), ...]
 
+If the ``TESTMODE`` flag is set, you can retrieve a test bank::
 
-Alternatively you can retrieve a test bank by adding a ``testmode`` flag::
-
-    >>> ideal_wrapper.get_banks(testmode=True)
+    >>> ideal_wrapper.TESTMODE = True
+    >>> ideal_wrapper.get_banks()
     [('9999', 'TBM Bank')]
+    >>> ideal_wrapper.TESTMODE = False
+    >>> ideal_wrapper.get_banks()
+    [('0031', 'ABN AMRO'), ...]
 
 The result of the call is a list of tuples. Each tuple consists of a
 bank ID and name. The name can be used to present to the customer so
 he/she can choose which bank to use. The ID is needed in the next
 step.
+
+.. note ::
+
+   If you want to use the test mode from Molllie to test payments,
+   please **also** switch your Mollie account to test mode otherwise
+   Mollie will not accept a test payment, even though the URL might
+   point to the test bank.
 
 
 Request a payment
@@ -58,8 +68,8 @@ payment with the API::
    ...     bank_id='9999', amount='123', message='The message',
    ...     report_url='http://example.com/report',
    ...     return_url='http://example.com/return',
-   ...     profile_key='999999', testmode=False)
-   ('123...123, 'http://...')
+   ...     profile_key='999999')
+   ('123...123', 'http://...')
 
 The result is a ``transaction_id``, and a URL to send the customer to
 to perform the payment.
@@ -71,11 +81,6 @@ to perform the payment.
    ignored). The ``profile_key`` parameter is optional. You only need
    to use it if you want to use a different payment profile than the
    default for the specified account.
-
-   Again, the ``testmode`` flag is optional and defaults to False. Be
-   sure to also switch your Mollie account to test mode otherwise
-   Mollie will not accept a test payment, even though the URL might
-   point to the test bank.
 
 
 Have the customer do the payment
@@ -160,7 +165,7 @@ And we can request banks, a payment URL and the payment status::
     ...     bank_id='9999', amount='123', message='The message',
     ...     report_url='http://example.com/report',
     ...     return_url='http://example.com/return',
-    ...     profile_key='999999', testmode=False)
+    ...     profile_key='999999')
     'http://....'
     >>> foo_payment.get_payment_status()
     'Success'

@@ -4,17 +4,14 @@ from zope.interface import Interface, Attribute
 class IMollieIdeal(Interface):
     """A utility that wraps the Mollie iDeal API."""
 
-    def get_banks(testmode=False):
+    def get_banks():
         """Return a list of bank id and name tuples.
 
         E.g.: [('0031, 'ABN AMRO'), ('0721', 'Postbank')]
-
-        @testmode determines whether we get the actual list of banks
-        or only the test bank 'The Big Mollie Bank'.
         """
 
     def request_payment(partner_id, bank_id, amount, message, report_url,
-                        return_url, profile_key=None, testmode=False):
+                        return_url, profile_key=None):
         """Return transaction ID and URL to visit.
 
         To send the request, a ``partner_id``, the Mollie account number,
@@ -34,7 +31,7 @@ class IMollieIdeal(Interface):
         profile than the default profile for the ``partnerid``.
         """
 
-    def check_payment(partner_id, transaction_id, testmode=False):
+    def check_payment(partner_id, transaction_id):
         """Check the status of the payment and return a dict with infomation.
 
         With a Mollie account number, ``partner_id``, and the ID of a
@@ -73,9 +70,6 @@ class IMollieIdealPayment(Interface):
         """Return a list of bank id and name tuples.
 
         E.g.: [('0031, 'ABN AMRO'), ('0721', 'Postbank')]
-
-        @testmode determines whether we get the actual list of banks
-        or only the test bank 'The Big Mollie Bank'.
         """
 
     def get_payment_url(partner_id, bank_id, amount, message,
