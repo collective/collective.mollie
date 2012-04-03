@@ -1,7 +1,13 @@
 Introduction
 ============
 
-``collective.mollie`` provides a wrapper for the `Mollie iDeal API`_.
+``collective.mollie`` provides a wrapper for the `Mollie iDeal
+API`_. This wrapper *can* be used without any further Plone
+integration. However, this package also provides:
+
+ - an `adapter`_ to store payment information on objects,
+ - a `browser view`_ which can be used to have Mollie report back, and
+ - an `event`_ which can be subscribed to to be notified when payment status has been updated.
 
 .. _`Mollie iDeal API`: http://www.mollie.nl/support/documentatie/betaaldiensten/ideal/
 
@@ -21,8 +27,8 @@ The complete iDeal payment process contains the following steps:
 Request the list of banks
 -------------------------
 
-Since the list of banks may change, you always need to retrieve the
-list of banks before you do the payment::
+Since the list of banks may change, you always need to retrieve it
+before you do the payment::
 
     >>> from zope.component import getUtility
     >>> from collective.mollie.interfaces import IMollieIdeal
@@ -177,8 +183,8 @@ As stated earlier, the payment information is stored persistently::
      }
 
 
-Report URL
-----------
+Browser View
+------------
 
 As described in the section `Check the payment`_, you have to wait with
 checking the payment status until Mollie has pinged the
@@ -205,9 +211,14 @@ interfaces. And obviously you can give it any name you want.)
 Then use ``<object>/absolute_url/@@report_payment_status`` as the
 ``report_url`` when requesting the payment URL.
 
+
+Event
+-----
+
 The view also emits an event: ``MollieIdealPaymentEvent``. So by
 implementing a subscriber in your own package, you can get a
-notification if the payment information of an object is updated.
+notification if the payment information of an object is updated and
+for instance change the workflow state of the object tp "payed".
 
 
 More information
@@ -218,9 +229,9 @@ For details about the Mollie iDeal API, see its documentation_.
 .. _documentation: http://www.mollie.nl/support/documentatie/betaaldiensten/ideal/
 
 
-Thanks
-======
+Credits
+=======
 
-This package is inspired by nfg.ideal_
+This package is inspired by nfg.ideal_.
 
 .. _nfg.ideal: http://pypi.python.org/pypi/nfg.ideal
