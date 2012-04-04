@@ -41,13 +41,13 @@ class IMollieIdeal(Interface):
         The content of the return value depends on the status of the payment.
 
         If, and only if, the payment succeeded, the return value also
-        contains information about consumer that payed.
+        contains information about consumer that paid.
 
         Note that if you call this method too early and the state is
         still 'Open' you are effectively never able to check the final
         state of the transaction. This is because the status may only
         be retrieved ONCE! Subsequent checks will always return a
-        status 'CheckedBefore' and appear not payed.
+        status 'CheckedBefore' and appear not paid.
 
         In other words: way until Mollie pinged the ``report_url``
         which was sent with the ``request_payment`` method.
@@ -61,7 +61,7 @@ class IMollieIdealPayment(Interface):
     transaction_id = Attribute('Transaction ID')
     amount = Attribute('Amount')
     currency = Attribute('Currency')
-    payed = Attribute('Payed')
+    paid = Attribute('Paid')
     consumer = Attribute('Consumer information')
     status = Attribute('Status')
     last_status = Attribute('Last status')

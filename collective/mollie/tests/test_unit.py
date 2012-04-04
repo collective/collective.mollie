@@ -166,7 +166,7 @@ class TestIdealWrapper(unittest.TestCase):
         self.assertTrue(result['transaction_id'] == self.transaction_id)
         self.assertTrue(result['amount'] == self.amount)
         self.assertTrue(result['currency'] == self.currency)
-        self.assertTrue(result['payed'])
+        self.assertTrue(result['paid'])
         self.assertTrue('consumer' in result)
         self.assertTrue(result['consumer']['name'] == 'T. TEST')
         self.assertTrue(result['consumer']['account'] == '0123456789')
@@ -180,7 +180,7 @@ class TestIdealWrapper(unittest.TestCase):
         self.ideal._do_request = MagicMock(
             side_effect=side_effect)
         result = self.ideal.check_payment(self.partner_id, self.transaction_id)
-        self.assertTrue(result['payed'] == False)
+        self.assertTrue(result['paid'] == False)
         self.assertTrue(result['status'] == 'Open')
         self.assertTrue('consumer_name' not in result)
 
@@ -191,7 +191,7 @@ class TestIdealWrapper(unittest.TestCase):
         self.ideal._do_request = MagicMock(
             side_effect=side_effect)
         result = self.ideal.check_payment(self.partner_id, self.transaction_id)
-        self.assertTrue(result['payed'] == False)
+        self.assertTrue(result['paid'] == False)
         self.assertTrue(result['status'] == 'CheckedBefore')
         self.assertTrue('consumer_name' not in result)
 
@@ -202,7 +202,7 @@ class TestIdealWrapper(unittest.TestCase):
         self.ideal._do_request = MagicMock(
             side_effect=side_effect)
         result = self.ideal.check_payment(self.partner_id, self.transaction_id)
-        self.assertTrue(result['payed'] == False)
+        self.assertTrue(result['paid'] == False)
         self.assertTrue(result['status'] == 'Cancelled')
         self.assertTrue('consumer_name' not in result)
 
@@ -275,7 +275,7 @@ class TestPaymentAdapter(unittest.TestCase):
             side_effect=side_effect2)
         result = self.adapted.get_payment_status()
         self.assertTrue(result == 'Success')
-        self.assertTrue(self.adapted.payed)
+        self.assertTrue(self.adapted.paid)
         self.assertTrue(self.adapted.consumer['name'] == 'T. TEST')
         self.assertTrue(self.adapted.consumer['account'] == '0123456789')
         self.assertTrue(self.adapted.consumer['city'] == 'Testdorp')
@@ -296,7 +296,7 @@ class TestPaymentAdapter(unittest.TestCase):
         self.adapted.ideal_wrapper._do_request = MagicMock(
             side_effect=side_effect2)
         self.adapted.get_payment_status()
-        self.assertFalse(self.adapted.payed)
+        self.assertFalse(self.adapted.paid)
         self.assertTrue(self.adapted.consumer is None)
         self.assertTrue(self.adapted.status == 'Cancelled')
 
@@ -325,7 +325,7 @@ class TestPaymentAdapter(unittest.TestCase):
             side_effect=side_effect3)
         result = self.adapted.get_payment_status()
         self.assertTrue(result == 'CheckedBefore')
-        self.assertTrue(self.adapted.payed)
+        self.assertTrue(self.adapted.paid)
         self.assertTrue(self.adapted.status == 'Success')
         self.assertTrue(self.adapted.last_status == 'CheckedBefore')
 
@@ -388,7 +388,7 @@ class TestReportView(unittest.TestCase):
         report_payment_view = getMultiAdapter((self.foo, request),
                                               name='report_payment_status')
         report_payment_view()
-        self.assertTrue(self.adapted.payed)
+        self.assertTrue(self.adapted.paid)
 
     def test_payment_event(self):
         """Check that the MollieIdealPaymentEvent was fired."""

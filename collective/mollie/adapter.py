@@ -49,8 +49,8 @@ class MollieIdealPayment(object):
     currency = property(lambda self: self._getter('currency'),
         lambda self, value: self._setter('currency', value))
 
-    payed = property(lambda self: self._getter('payed'),
-        lambda self, value: self._setter('payed', value))
+    paid = property(lambda self: self._getter('paid'),
+        lambda self, value: self._setter('paid', value))
 
     consumer = property(lambda self: self._getter('consumer'),
         lambda self, value: self._setter('consumer', value))
@@ -85,7 +85,7 @@ class MollieIdealPayment(object):
         if order_info['status'] != 'CheckedBefore':
             # Only store the main info the first time.
             self.currency = order_info['currency']
-            self.payed = order_info['payed']
+            self.paid = order_info['paid']
             self.consumer = order_info.get('consumer')
             self.status = order_info['status']
         self.last_status = order_info['status']
