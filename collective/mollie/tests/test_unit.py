@@ -107,6 +107,18 @@ class TestIdealWrapper(unittest.TestCase):
             self.partner_id, self.bank_id, self.amount, self.message,
             self.report_url, self.return_url)
 
+    def test_payment_request_amount_int(self):
+        """Check that the amount can also be an int."""
+        def side_effect(*args, **kwargs):
+            return mock_do_request('request_payment_good.xml')
+        self.ideal._do_request = MagicMock(
+            side_effect=side_effect)
+        transaction_id, url = self.ideal.request_payment(
+            self.partner_id, self.bank_id, int(self.amount), self.message,
+            self.report_url, self.return_url)
+        # The fact that no error was raised proves that the amount was correct.
+        self.assertTrue(transaction_id == '482d599bbcc7795727650330ad65fe9b')
+
     def test_payment_request_wrong_currency(self):
         """Check payment request with wrong currency in answer"""
         def side_effect(*args, **kwargs):

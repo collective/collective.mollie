@@ -103,7 +103,7 @@ class MollieIdeal(object):
             data['profile_key'] = profile_key
         answer = self._call_mollie(data)
         order = answer.get('order')
-        if order.get('amount') != amount:
+        if order.get('amount') != str(amount):
             raise ValueError('The amount for the payment is incorrect.')
         if order.get('currency') != 'EUR':
             raise ValueError('The currency for the payment is incorrect.')
