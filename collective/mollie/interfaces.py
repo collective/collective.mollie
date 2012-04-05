@@ -86,4 +86,5 @@ class IMollieIdealPayment(Interface):
 class IMollieIdealPaymentEvent(Interface):
     """An event signalling that Mollie an iDeal payment has been processed."""
 
-    obj = Attribute('The object the payment was processed for.')
+    context = Attribute('The object the payment was processed for.')
+    request = Attribute('The request')

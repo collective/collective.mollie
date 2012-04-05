@@ -400,3 +400,16 @@ class TestReportView(unittest.TestCase):
         payment_events = [event for event in eventtesting.getEvents()
                           if IMollieIdealPaymentEvent.providedBy(event)]
         self.assertTrue(len(payment_events) > 0)
+
+    def test_payment_event_content(self):
+        """Check that the MollieIdealPaymentEvent has the content we need."""
+        request = TestRequest(
+            form=dict(transaction_id=self.adapted.transaction_id))
+        report_payment_view = getMultiAdapter((self.foo, request),
+                                              name='report_payment_status')
+        report_payment_view()
+        payment_events = [event for event in eventtesting.getEvents()
+                          if IMollieIdealPaymentEvent.providedBy(event)]
+        event = payment_events[0]
+        self.assertTrue(event.context == self.foo)
+        self.assertTrue(event.request == request)

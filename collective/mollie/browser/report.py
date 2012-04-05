@@ -22,6 +22,6 @@ class ReportPaymentStatusView(BrowserView):
             return message
 
         adapted.get_payment_status()
-        notify(MollieIdealPaymentEvent(self.context))
+        notify(MollieIdealPaymentEvent(self.context, self.request))
         self.request.response.setStatus(200)
         return 'OK'

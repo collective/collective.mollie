@@ -148,8 +148,11 @@ interface. For instance::
 
     >>> from zope.annotation import IAttributeAnnotatable
     >>> from persistent import Persistent
+    >>> from zope.interface import Interface
+    >>> class IFoo(Interface):
+    >>>     pass
     >>> class Foo(Persistent):
-    ...     implements(IAttributeAnnotatable)
+    ...     implements(IFoo, IAttributeAnnotatable)
     >>> foo = Foo()
 
 This object ``foo`` can now be adapted::
@@ -224,6 +227,22 @@ The view also emits an event: ``MollieIdealPaymentEvent``. So by
 implementing a subscriber in your own package, you can get a
 notification if the payment information of an object is updated and
 for instance change the workflow state of the object to "paid".
+
+You can, for example, register a subscriber in your ``configure.zcml``::
+
+  <subscriber
+      for="IFoo
+           collective.mollie.interfaces.IMollieIdealPaymentEvent"
+      handler=".events.process_payment"
+      />
+
+And in ``events.py``::
+
+    def process_payment(obj, event):
+        """Process the payment information."""
+
+Where ``obj`` is an instance of ``Foo`` and ``event`` is the
+``MollieIdealPaymentEvent``.
 
 
 More information
