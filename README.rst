@@ -102,7 +102,7 @@ Mollie, you can check the status of the payment::
     {'transaction_id': '123...123',
      'amount': '123',
      'currency': 'EUR',
-     'payed': True,
+     'paid': True,
      'status': 'Success',
      'consumer': {
          'name': 'T. TEST',
@@ -177,7 +177,7 @@ for the ``get_payment_status`` call.
 
 As stated earlier, the payment information is stored persistently::
 
-    >>> foo_payment.payed
+    >>> foo_payment.paid
     True
     >>> foo_payment.amount
     '123'
@@ -223,7 +223,7 @@ Event
 The view also emits an event: ``MollieIdealPaymentEvent``. So by
 implementing a subscriber in your own package, you can get a
 notification if the payment information of an object is updated and
-for instance change the workflow state of the object tp "payed".
+for instance change the workflow state of the object to "paid".
 
 
 More information
