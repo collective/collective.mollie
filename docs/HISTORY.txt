@@ -1,7 +1,13 @@
 Changelog
 =========
 
-0.2 (unreleased)
+0.3 (unreleased)
+----------------
+
+- No changes yet.
+
+
+0.2 (2012-04-05)
 ----------------
 
 - The MollieIdealPaymentEvent now subclasses the ObjectEvent and
