@@ -34,7 +34,7 @@ class MollieIdealPayment(object):
     _partner_id = property(lambda self: self._getter('partner_id'),
         lambda self, value: self._setter('partner_id', value))
 
-    _partner_id = property(lambda self: self._getter('profile_key'),
+    _profile_key = property(lambda self: self._getter('profile_key'),
         lambda self, value: self._setter('profile_key', value))
 
     last_update = property(lambda self: self._getter('last_update'),

@@ -4,7 +4,9 @@ Changelog
 0.3 (unreleased)
 ----------------
 
-- No changes yet.
+- Fix typo in the adapter which defined the _partner_id property a
+  second time instead of the _profile_key.
+  [markvl]
 
 
 0.2 (2012-04-05)
