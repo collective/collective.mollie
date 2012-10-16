@@ -5,6 +5,7 @@
 bin
 build
 buildout.cfg
+buildout-cache
 develop-eggs
 dist
 eggs
