@@ -6,6 +6,7 @@ bin
 build
 buildout.cfg
 buildout-cache
+coverage
 develop-eggs
 dist
 eggs
