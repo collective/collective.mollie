@@ -127,7 +127,7 @@ class MollieIdeal(object):
         be retrieved ONCE! Subsequent checks will always return a
         status 'CheckedBefore' and appear not paid.
 
-        In other words: way until Mollie pinged the ``report_url``
+        In other words: wait until Mollie pinged the ``report_url``
         which was sent with the ``request_payment`` method.
         """
         data = {
