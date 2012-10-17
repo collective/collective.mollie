@@ -1,0 +1,10 @@
+<Foo>
+  <Bar>
+    <Qux>1</Qux>
+    <Qux>2</Qux>
+  </Bar>
+  <Bar>
+    <Qux>3</Qux>
+    <Qux>4</Qux>
+  </Bar>
+</Foo>

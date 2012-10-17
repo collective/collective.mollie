@@ -1,0 +1,10 @@
+<Foo>
+  <Bar>
+    <Qux>1</Qux>
+    <Quux>2</Quux>
+  </Bar>
+  <Corge>
+    <Qux>3</Qux>
+    <Quux>4</Quux>
+  </Corge>
+</Foo>

@@ -1,0 +1,8 @@
+<Foo level="root">
+  <Bar value="1" />
+  <Qux eggs="2">
+    <Quux ham="3" />
+    <Quuux>4</Quuux>
+  </Qux>
+  <Corge>5</Corge>
+</Foo>
