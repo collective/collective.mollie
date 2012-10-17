@@ -4,6 +4,13 @@ Changelog
 0.3 (unreleased)
 ----------------
 
+- Fix FutureWarnings that appeared when running the tests.
+  [markvl]
+
+- Improve test coverage by also testing the XML to dict and list
+  converters.
+  [marklv]
+
 - Fix typo in the adapter which defined the _partner_id property a
   second time instead of the _profile_key.
   [markvl]
