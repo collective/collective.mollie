@@ -8,9 +8,12 @@ from zope.component import getMultiAdapter
 from zope.component import getUtility
 from zope.publisher.browser import TestRequest
 
+from collective.mollie.adapter import MollieIdealMultiplePayments
 from collective.mollie.adapter import MollieIdealPayment
+from collective.mollie.adapter import UnknownTransactionError
 from collective.mollie.ideal import MollieAPIError
 from collective.mollie.interfaces import IMollieIdeal
+from collective.mollie.interfaces import IMollieIdealMultiplePayments
 from collective.mollie.interfaces import IMollieIdealPayment
 from collective.mollie.interfaces import IMollieIdealPaymentEvent
 from collective.mollie.testing import COLLECTIVE_MOLLIE_INTEGRATION_TESTING
@@ -328,6 +331,190 @@ class TestPaymentAdapter(unittest.TestCase):
         self.assertTrue(self.adapted.paid)
         self.assertTrue(self.adapted.status == 'Success')
         self.assertTrue(self.adapted.last_status == 'CheckedBefore')
+
+
+class TestMultiplePaymentsAdapter(unittest.TestCase):
+    """Test the Mollie iDeal Multiple Payments adapter."""
+
+    layer = COLLECTIVE_MOLLIE_INTEGRATION_TESTING
+
+    def setUp(self):
+        self.foo = Foo()
+        self.adapted = IMollieIdealMultiplePayments(self.foo)
+        self.adapted.ideal_wrapper.old_do_request = \
+            self.adapted.ideal_wrapper._do_request
+        self.partner_id = '999999'
+        self.bank_id = '9999'
+        self.amount = '123'  # 1.23 Euro
+        self.currency = 'EUR'
+        self.message = 'Testing payment'
+        self.report_url = 'http://example.com/report_payment'
+        self.return_url = 'http://example.com/return_url'
+        self.transaction_id = '482d599bbcc7795727650330ad65fe9b'
+
+    def tearDown(self):
+        self.adapted.ideal_wrapper._do_request = \
+            self.adapted.ideal_wrapper.old_do_request
+
+    def test_adapter(self):
+        """Test whether we can adapt."""
+        self.assertTrue(isinstance(self.adapted, MollieIdealMultiplePayments))
+
+    def test_get_banks(self):
+        """Check we can retrieve the banks from Mollie."""
+        def side_effect(*args, **kwargs):
+            return mock_do_request('banks.xml')
+        self.adapted.ideal_wrapper._do_request = MagicMock(
+            side_effect=side_effect)
+        banks = self.adapted.get_banks()
+        self.assertTrue(('0021', 'Rabobank') in banks)
+
+    def test_get_unknown_transaction(self):
+        """Check if we can retrieve data for an unknown transaction."""
+        self.assertRaises(UnknownTransactionError,
+                          self.adapted.get_transaction, 'foobar')
+
+    def test_get_payment_url(self):
+        """Check we can get a payment URL and the transaction ID is stored."""
+        def side_effect(*args, **kwargs):
+            return mock_do_request('request_payment_good.xml')
+        self.adapted.ideal_wrapper._do_request = MagicMock(
+            side_effect=side_effect)
+        my_transaction_id, url = self.adapted.get_payment_url(self.partner_id,
+            self.bank_id, self.amount, self.message, self.report_url,
+            self.return_url)
+        # The right URL is returned
+        self.assertTrue(url == 'https://mijn.postbank.nl/internetbankieren/' +
+                               'SesamLoginServlet?sessie=ideal&trxid=' +
+                               '003123456789123&random=123456789abcdefgh')
+        # The right transaction_id is returned
+        self.assertEqual(my_transaction_id, self.transaction_id)
+        # The right transaction information is stored.
+        stored_transaction = self.adapted.get_transaction(my_transaction_id)
+        self.assertNotEqual(stored_transaction, None)
+        self.assertEqual(stored_transaction['amount'], self.amount)
+        self.assertEqual(stored_transaction['partner_id'], self.partner_id)
+
+    def test_unknown_transaction_payment_status(self):
+        """Check if we can retrieve status for unknown transaction."""
+        self.assertRaises(UnknownTransactionError,
+                          self.adapted.get_payment_status, 'foobar')
+
+    def test_get_payment_status_success(self):
+        """Check the best case: a successfull payment."""
+        def side_effect(*args, **kwargs):
+            return mock_do_request('request_payment_good.xml')
+        self.adapted.ideal_wrapper._do_request = MagicMock(
+            side_effect=side_effect)
+        self.adapted.get_payment_url(self.partner_id, self.bank_id,
+            self.amount, self.message, self.report_url, self.return_url)
+
+        def side_effect2(*args, **kwargs):
+            return mock_do_request('payment_success.xml')
+        self.adapted.ideal_wrapper._do_request = MagicMock(
+            side_effect=side_effect2)
+        result = self.adapted.get_payment_status(self.transaction_id)
+        transaction = self.adapted.get_transaction(self.transaction_id)
+        self.assertEqual(result, 'Success')
+        self.assertTrue(transaction['paid'])
+        self.assertEqual(transaction['consumer']['name'], 'T. TEST')
+        self.assertEqual(transaction['consumer']['account'], '0123456789')
+        self.assertEqual(transaction['consumer']['city'], 'Testdorp')
+        self.assertEqual(transaction['status'], 'Success')
+        self.assertEqual(transaction['last_status'], 'Success')
+
+    def test_get_payment_status_cancelled(self):
+        """Check a cancelled payment."""
+        def side_effect(*args, **kwargs):
+            return mock_do_request('request_payment_good.xml')
+        self.adapted.ideal_wrapper._do_request = MagicMock(
+            side_effect=side_effect)
+        self.adapted.get_payment_url(self.partner_id, self.bank_id,
+            self.amount, self.message, self.report_url, self.return_url)
+
+        def side_effect2(*args, **kwargs):
+            return mock_do_request('payment_cancelled.xml')
+        self.adapted.ideal_wrapper._do_request = MagicMock(
+            side_effect=side_effect2)
+        result = self.adapted.get_payment_status(self.transaction_id)
+        transaction = self.adapted.get_transaction(self.transaction_id)
+        self.assertEqual(result, 'Cancelled')
+        self.assertFalse(transaction['paid'])
+        self.assertEqual(transaction['consumer'], None)
+        self.assertEqual(transaction['status'], 'Cancelled')
+
+    def test_get_payment_status_checked_before(self):
+        """Check payment twice: the result is saved."""
+        def side_effect(*args, **kwargs):
+            return mock_do_request('request_payment_good.xml')
+        self.adapted.ideal_wrapper._do_request = MagicMock(
+            side_effect=side_effect)
+        self.adapted.get_payment_url(self.partner_id, self.bank_id,
+            self.amount, self.message, self.report_url, self.return_url)
+
+        # We first check the success.
+        def side_effect2(*args, **kwargs):
+            return mock_do_request('payment_success.xml')
+        self.adapted.ideal_wrapper._do_request = MagicMock(
+            side_effect=side_effect2)
+        result = self.adapted.get_payment_status(self.transaction_id)
+        self.assertTrue(result == 'Success')
+
+        # A second check will return 'CheckedBefore' but the payment
+        # status will be saved.
+        def side_effect3(*args, **kwargs):
+            return mock_do_request('payment_checked_before.xml')
+        self.adapted.ideal_wrapper._do_request = MagicMock(
+            side_effect=side_effect3)
+        result = self.adapted.get_payment_status(self.transaction_id)
+        transaction = self.adapted.get_transaction(self.transaction_id)
+        self.assertEqual(result, 'CheckedBefore')
+        self.assertTrue(transaction['paid'])
+        self.assertEqual(transaction['status'], 'Success')
+        self.assertEqual(transaction['last_status'], 'CheckedBefore')
+
+    def test_multiple_payments(self):
+        """Check storing multiple payments."""
+        # Request payment 1.
+        def side_effect(*args, **kwargs):
+            return mock_do_request('request_payment_good.xml')
+        self.adapted.ideal_wrapper._do_request = MagicMock(
+            side_effect=side_effect)
+        transaction_id1, url = self.adapted.get_payment_url(
+            self.partner_id, self.bank_id, self.amount, self.message,
+            self.report_url, self.return_url)
+
+        # Request payment 2.
+        def side_effect2(*args, **kwargs):
+            return mock_do_request('request_payment_good_2.xml')
+        self.adapted.ideal_wrapper._do_request = MagicMock(
+            side_effect=side_effect2)
+        transaction_id2, url = self.adapted.get_payment_url(
+            self.partner_id, self.bank_id, self.amount, self.message,
+            self.report_url, self.return_url)
+
+        # Process payment 1.
+        def side_effect3(*args, **kwargs):
+            return mock_do_request('payment_success.xml')
+        self.adapted.ideal_wrapper._do_request = MagicMock(
+            side_effect=side_effect3)
+        result1 = self.adapted.get_payment_status(transaction_id1)
+        transaction1 = self.adapted.get_transaction(transaction_id1)
+
+        # Process payment 2.
+        def side_effect4(*args, **kwargs):
+            return mock_do_request('payment_cancelled_2.xml')
+        self.adapted.ideal_wrapper._do_request = MagicMock(
+            side_effect=side_effect4)
+        result2 = self.adapted.get_payment_status(transaction_id2)
+        transaction2 = self.adapted.get_transaction(transaction_id2)
+
+        # Check the results.
+        self.assertEqual(result1, 'Success')
+        self.assertTrue(transaction1['paid'])
+
+        self.assertEqual(result2, 'Cancelled')
+        self.assertFalse(transaction2['paid'])
 
 
 class TestReportView(unittest.TestCase):

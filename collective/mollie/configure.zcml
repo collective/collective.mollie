@@ -9,5 +9,6 @@
            factory=".ideal.MollieIdeal" />
 
   <adapter factory=".adapter.MollieIdealPayment" />
+  <adapter factory=".adapter.MollieIdealMultiplePayments" />
 
 </configure>
