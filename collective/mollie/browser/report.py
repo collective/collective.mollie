@@ -27,7 +27,8 @@ class ReportPaymentStatusView(BrowserView):
             return message
 
         adapted.get_payment_status()
-        notify(MollieIdealPaymentEvent(self.context, self.request))
+        notify(MollieIdealPaymentEvent(self.context, self.request,
+                                       received_transaction_id))
         self.request.response.setStatus(200)
         return 'OK'
 
@@ -55,6 +56,7 @@ class ReportMultiplePaymentsStatusView(BrowserView):
             return message
 
         adapted.get_payment_status(received_transaction_id)
-        notify(MollieIdealPaymentEvent(self.context, self.request))
+        notify(MollieIdealPaymentEvent(self.context, self.request,
+                                       received_transaction_id))
         self.request.response.setStatus(200)
         return 'OK'

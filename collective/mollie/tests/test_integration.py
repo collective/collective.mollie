@@ -605,6 +605,7 @@ class TestReportSinglePaymentView(unittest.TestCase):
         event = payment_events[0]
         self.assertTrue(event.context == self.foo)
         self.assertTrue(event.request == request)
+        self.assertTrue(event.transaction_id == self.adapted.transaction_id)
 
 
 class TestReportMultiplePaymentView(unittest.TestCase):
@@ -698,6 +699,7 @@ class TestReportMultiplePaymentView(unittest.TestCase):
         event = payment_events[0]
         self.assertEqual(event.context, self.foo)
         self.assertEqual(event.request, request)
+        self.assertEqual(event.transaction_id, self.transaction_id)
 
 
 class TestMollieConnection(unittest.TestCase):
