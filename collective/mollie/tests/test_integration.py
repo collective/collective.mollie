@@ -93,10 +93,10 @@ class TestIdealWrapper(unittest.TestCase):
         transaction_id, url = self.ideal.request_payment(
             self.partner_id, self.bank_id, self.amount, self.message,
             self.report_url, self.return_url)
-        self.assertTrue(transaction_id == '482d599bbcc7795727650330ad65fe9b')
-        self.assertTrue(url == 'https://mijn.postbank.nl/internetbankieren/' +
-                               'SesamLoginServlet?sessie=ideal&trxid=' +
-                               '003123456789123&random=123456789abcdefgh')
+        self.assertEqual(transaction_id, '482d599bbcc7795727650330ad65fe9b')
+        self.assertEqual(url, 'https://mijn.postbank.nl/internetbankieren/' +
+                              'SesamLoginServlet?sessie=ideal&trxid=' +
+                              '003123456789123&random=123456789abcdefgh')
 
     def test_payment_request_wrong_amount(self):
         """Check payment request with wrong amount in answer"""
@@ -120,7 +120,7 @@ class TestIdealWrapper(unittest.TestCase):
             self.partner_id, self.bank_id, int(self.amount), self.message,
             self.report_url, self.return_url)
         # The fact that no error was raised proves that the amount was correct.
-        self.assertTrue(transaction_id == '482d599bbcc7795727650330ad65fe9b')
+        self.assertEqual(transaction_id, '482d599bbcc7795727650330ad65fe9b')
 
     def test_payment_request_wrong_currency(self):
         """Check payment request with wrong currency in answer"""
@@ -166,15 +166,15 @@ class TestIdealWrapper(unittest.TestCase):
         self.ideal._do_request = MagicMock(
             side_effect=side_effect)
         result = self.ideal.check_payment(self.partner_id, self.transaction_id)
-        self.assertTrue(result['transaction_id'] == self.transaction_id)
-        self.assertTrue(result['amount'] == self.amount)
-        self.assertTrue(result['currency'] == self.currency)
+        self.assertEqual(result['transaction_id'], self.transaction_id)
+        self.assertEqual(result['amount'], self.amount)
+        self.assertEqual(result['currency'], self.currency)
         self.assertTrue(result['paid'])
         self.assertTrue('consumer' in result)
-        self.assertTrue(result['consumer']['name'] == 'T. TEST')
-        self.assertTrue(result['consumer']['account'] == '0123456789')
-        self.assertTrue(result['consumer']['city'] == 'Testdorp')
-        self.assertTrue(result['status'] == 'Success')
+        self.assertEqual(result['consumer']['name'], 'T. TEST')
+        self.assertEqual(result['consumer']['account'], '0123456789')
+        self.assertEqual(result['consumer']['city'], 'Testdorp')
+        self.assertEqual(result['status'], 'Success')
 
     def test_check_payment_open(self):
         """Check payment which is still open."""
@@ -183,8 +183,8 @@ class TestIdealWrapper(unittest.TestCase):
         self.ideal._do_request = MagicMock(
             side_effect=side_effect)
         result = self.ideal.check_payment(self.partner_id, self.transaction_id)
-        self.assertTrue(result['paid'] == False)
-        self.assertTrue(result['status'] == 'Open')
+        self.assertFalse(result['paid'])
+        self.assertEqual(result['status'], 'Open')
         self.assertTrue('consumer_name' not in result)
 
     def test_check_payment_checked_before(self):
@@ -194,8 +194,8 @@ class TestIdealWrapper(unittest.TestCase):
         self.ideal._do_request = MagicMock(
             side_effect=side_effect)
         result = self.ideal.check_payment(self.partner_id, self.transaction_id)
-        self.assertTrue(result['paid'] == False)
-        self.assertTrue(result['status'] == 'CheckedBefore')
+        self.assertFalse(result['paid'])
+        self.assertEqual(result['status'], 'CheckedBefore')
         self.assertTrue('consumer_name' not in result)
 
     def test_check_payment_cancelled(self):
@@ -205,8 +205,8 @@ class TestIdealWrapper(unittest.TestCase):
         self.ideal._do_request = MagicMock(
             side_effect=side_effect)
         result = self.ideal.check_payment(self.partner_id, self.transaction_id)
-        self.assertTrue(result['paid'] == False)
-        self.assertTrue(result['status'] == 'Cancelled')
+        self.assertFalse(result['paid'])
+        self.assertEqual(result['status'], 'Cancelled')
         self.assertTrue('consumer_name' not in result)
 
 
@@ -255,13 +255,13 @@ class TestPaymentAdapter(unittest.TestCase):
         url = self.adapted.get_payment_url(self.partner_id, self.bank_id,
             self.amount, self.message, self.report_url, self.return_url)
         # The right URL is returned
-        self.assertTrue(url == 'https://mijn.postbank.nl/internetbankieren/' +
-                               'SesamLoginServlet?sessie=ideal&trxid=' +
-                               '003123456789123&random=123456789abcdefgh')
+        self.assertEqual(url, 'https://mijn.postbank.nl/internetbankieren/' +
+                              'SesamLoginServlet?sessie=ideal&trxid=' +
+                              '003123456789123&random=123456789abcdefgh')
         # The right transaction information is stored.
-        self.assertTrue(self.adapted.transaction_id == self.transaction_id)
-        self.assertTrue(self.adapted.amount == self.amount)
-        self.assertTrue(self.adapted._partner_id == self.partner_id)
+        self.assertEqual(self.adapted.transaction_id, self.transaction_id)
+        self.assertEqual(self.adapted.amount, self.amount)
+        self.assertEqual(self.adapted._partner_id, self.partner_id)
 
     def test_get_payment_status_success(self):
         """Check the best case: a successfull payment."""
@@ -277,13 +277,13 @@ class TestPaymentAdapter(unittest.TestCase):
         self.adapted.ideal_wrapper._do_request = MagicMock(
             side_effect=side_effect2)
         result = self.adapted.get_payment_status()
-        self.assertTrue(result == 'Success')
+        self.assertEqual(result, 'Success')
         self.assertTrue(self.adapted.paid)
-        self.assertTrue(self.adapted.consumer['name'] == 'T. TEST')
-        self.assertTrue(self.adapted.consumer['account'] == '0123456789')
-        self.assertTrue(self.adapted.consumer['city'] == 'Testdorp')
-        self.assertTrue(self.adapted.status == 'Success')
-        self.assertTrue(self.adapted.last_status == 'Success')
+        self.assertEqual(self.adapted.consumer['name'], 'T. TEST')
+        self.assertEqual(self.adapted.consumer['account'], '0123456789')
+        self.assertEqual(self.adapted.consumer['city'], 'Testdorp')
+        self.assertEqual(self.adapted.status, 'Success')
+        self.assertEqual(self.adapted.last_status, 'Success')
 
     def test_get_payment_status_cancelled(self):
         """Check a cancelled payment."""
@@ -300,8 +300,8 @@ class TestPaymentAdapter(unittest.TestCase):
             side_effect=side_effect2)
         self.adapted.get_payment_status()
         self.assertFalse(self.adapted.paid)
-        self.assertTrue(self.adapted.consumer is None)
-        self.assertTrue(self.adapted.status == 'Cancelled')
+        self.assertEqual(self.adapted.consumer, None)
+        self.assertEqual(self.adapted.status, 'Cancelled')
 
     def test_get_payment_status_checked_before(self):
         """Check payment twice: teh result is saved."""
@@ -318,7 +318,7 @@ class TestPaymentAdapter(unittest.TestCase):
         self.adapted.ideal_wrapper._do_request = MagicMock(
             side_effect=side_effect2)
         result = self.adapted.get_payment_status()
-        self.assertTrue(result == 'Success')
+        self.assertEqual(result, 'Success')
 
         # A second check will return 'CheckedBefore' but the payment
         # status will be saved.
@@ -327,10 +327,10 @@ class TestPaymentAdapter(unittest.TestCase):
         self.adapted.ideal_wrapper._do_request = MagicMock(
             side_effect=side_effect3)
         result = self.adapted.get_payment_status()
-        self.assertTrue(result == 'CheckedBefore')
+        self.assertEqual(result, 'CheckedBefore')
         self.assertTrue(self.adapted.paid)
-        self.assertTrue(self.adapted.status == 'Success')
-        self.assertTrue(self.adapted.last_status == 'CheckedBefore')
+        self.assertEqual(self.adapted.status, 'Success')
+        self.assertEqual(self.adapted.last_status, 'CheckedBefore')
 
 
 class TestMultiplePaymentsAdapter(unittest.TestCase):
@@ -384,9 +384,9 @@ class TestMultiplePaymentsAdapter(unittest.TestCase):
             self.bank_id, self.amount, self.message, self.report_url,
             self.return_url)
         # The right URL is returned
-        self.assertTrue(url == 'https://mijn.postbank.nl/internetbankieren/' +
-                               'SesamLoginServlet?sessie=ideal&trxid=' +
-                               '003123456789123&random=123456789abcdefgh')
+        self.assertEqual(url, 'https://mijn.postbank.nl/internetbankieren/' +
+                              'SesamLoginServlet?sessie=ideal&trxid=' +
+                              '003123456789123&random=123456789abcdefgh')
         # The right transaction_id is returned
         self.assertEqual(my_transaction_id, self.transaction_id)
         # The right transaction information is stored.
@@ -458,7 +458,7 @@ class TestMultiplePaymentsAdapter(unittest.TestCase):
         self.adapted.ideal_wrapper._do_request = MagicMock(
             side_effect=side_effect2)
         result = self.adapted.get_payment_status(self.transaction_id)
-        self.assertTrue(result == 'Success')
+        self.assertEqual(result, 'Success')
 
         # A second check will return 'CheckedBefore' but the payment
         # status will be saved.
@@ -551,8 +551,8 @@ class TestReportSinglePaymentView(unittest.TestCase):
         report_payment_view = getMultiAdapter((self.foo, request),
                                               name='report_payment_status')
         result = report_payment_view()
-        self.assertTrue(result == 'Wrong or missing transaction ID')
-        self.assertTrue(request.response.getStatus() == 403)
+        self.assertEqual(result, 'Wrong or missing transaction ID')
+        self.assertEqual(request.response.getStatus(), 403)
 
     def test_wrong_transaction_id(self):
         """Check wrong transaction_id is invalid."""
@@ -560,8 +560,8 @@ class TestReportSinglePaymentView(unittest.TestCase):
         report_payment_view = getMultiAdapter((self.foo, request),
                                               name='report_payment_status')
         result = report_payment_view()
-        self.assertTrue(result == 'Wrong or missing transaction ID')
-        self.assertTrue(request.response.getStatus() == 403)
+        self.assertEqual(result, 'Wrong or missing transaction ID')
+        self.assertEqual(request.response.getStatus(), 403)
 
     def test_correct_response(self):
         """Check the response if the right transaction_id is received."""
@@ -570,8 +570,8 @@ class TestReportSinglePaymentView(unittest.TestCase):
         report_payment_view = getMultiAdapter((self.foo, request),
                                               name='report_payment_status')
         result = report_payment_view()
-        self.assertTrue(result == 'OK')
-        self.assertTrue(request.response.getStatus() == 200)
+        self.assertEqual(result, 'OK')
+        self.assertEqual(request.response.getStatus(), 200)
 
     def test_correct_processing(self):
         """Check the payment has indeed been processed."""
@@ -603,9 +603,9 @@ class TestReportSinglePaymentView(unittest.TestCase):
         payment_events = [event for event in eventtesting.getEvents()
                           if IMollieIdealPaymentEvent.providedBy(event)]
         event = payment_events[0]
-        self.assertTrue(event.context == self.foo)
-        self.assertTrue(event.request == request)
-        self.assertTrue(event.transaction_id == self.adapted.transaction_id)
+        self.assertEqual(event.context, self.foo)
+        self.assertEqual(event.request, request)
+        self.assertEqual(event.transaction_id, self.adapted.transaction_id)
 
 
 class TestReportMultiplePaymentView(unittest.TestCase):
@@ -663,8 +663,8 @@ class TestReportMultiplePaymentView(unittest.TestCase):
         payment_view = getMultiAdapter((self.foo, request),
                                        name='report_multiple_payment_status')
         result = payment_view()
-        self.assertTrue(result == 'OK')
-        self.assertTrue(request.response.getStatus() == 200)
+        self.assertEqual(result, 'OK')
+        self.assertEqual(request.response.getStatus(), 200)
 
     def test_correct_processing(self):
         """Check the payment has indeed been processed."""
