@@ -517,7 +517,12 @@ class TestMultiplePaymentsAdapter(unittest.TestCase):
         self.assertFalse(transaction2['paid'])
 
 
-class TestReportView(unittest.TestCase):
+class TestReportSinglePaymentView(unittest.TestCase):
+    """Test the report view where Mollie reports a payment.
+
+    This view assumes only one payment can be done on the context and
+    thus uses the MollieIdealPayments adapter.
+    """
 
     layer = COLLECTIVE_MOLLIE_INTEGRATION_TESTING
 
@@ -600,6 +605,99 @@ class TestReportView(unittest.TestCase):
         event = payment_events[0]
         self.assertTrue(event.context == self.foo)
         self.assertTrue(event.request == request)
+
+
+class TestReportMultiplePaymentView(unittest.TestCase):
+    """Test the report view where Mollie reports a payment.
+
+    This view assumes multiple payments can be done on the context and
+    thus uses the MollieIdealMultiplePayments adapter.
+    """
+
+    layer = COLLECTIVE_MOLLIE_INTEGRATION_TESTING
+
+    def _side_effect(*args, **kwargs):
+        return mock_do_request('payment_success.xml')
+
+    def setUp(self):
+        self.ideal = getUtility(IMollieIdeal)
+        self.ideal.old_do_request = self.ideal._do_request
+        self.ideal._do_request = MagicMock(
+            side_effect=self._side_effect)
+
+        self.foo = Foo()
+        self.transaction_id = '482d599bbcc7795727650330ad65fe9b'
+        self.adapted = IMollieIdealMultiplePayments(self.foo)
+        self.adapted._metadata[self.transaction_id] = {
+            'partner_id': '999999',
+            }
+        eventtesting.setUp()
+
+    def tearDown(self):
+        self.ideal._do_request = self.ideal.old_do_request
+        eventtesting.clearEvents()
+
+    def test_missing_transaction_id(self):
+        """Check missing transaction_id is invalid."""
+        request = TestRequest()
+        payment_view = getMultiAdapter((self.foo, request),
+                                       name='report_multiple_payment_status')
+        result = payment_view()
+        self.assertEqual(result, 'Wrong or missing transaction ID')
+        self.assertEqual(request.response.getStatus(), 403)
+
+    def test_wrong_transaction_id(self):
+        """Check wrong transaction_id is invalid."""
+        request = TestRequest(form=dict(transaction_id='deadbeef'))
+        payment_view = getMultiAdapter((self.foo, request),
+                                       name='report_multiple_payment_status')
+        result = payment_view()
+        self.assertEqual(result, 'Wrong or missing transaction ID')
+        self.assertEqual(request.response.getStatus(), 403)
+
+    def test_correct_response(self):
+        """Check the response if the right transaction_id is received."""
+        request = TestRequest(
+            form=dict(transaction_id=self.transaction_id))
+        payment_view = getMultiAdapter((self.foo, request),
+                                       name='report_multiple_payment_status')
+        result = payment_view()
+        self.assertTrue(result == 'OK')
+        self.assertTrue(request.response.getStatus() == 200)
+
+    def test_correct_processing(self):
+        """Check the payment has indeed been processed."""
+        request = TestRequest(
+            form=dict(transaction_id=self.transaction_id))
+        payment_view = getMultiAdapter((self.foo, request),
+                                       name='report_multiple_payment_status')
+        payment_view()
+        transaction = self.adapted.get_transaction(self.transaction_id)
+        self.assertTrue(transaction['paid'])
+
+    def test_payment_event(self):
+        """Check that the MollieIdealPaymentEvent was fired."""
+        request = TestRequest(
+            form=dict(transaction_id=self.transaction_id))
+        payment_view = getMultiAdapter((self.foo, request),
+                                       name='report_multiple_payment_status')
+        payment_view()
+        payment_events = [event for event in eventtesting.getEvents()
+                          if IMollieIdealPaymentEvent.providedBy(event)]
+        self.assertTrue(len(payment_events) > 0)
+
+    def test_payment_event_content(self):
+        """Check that the MollieIdealPaymentEvent has the content we need."""
+        request = TestRequest(
+            form=dict(transaction_id=self.transaction_id))
+        payment_view = getMultiAdapter((self.foo, request),
+                                       name='report_multiple_payment_status')
+        payment_view()
+        payment_events = [event for event in eventtesting.getEvents()
+                          if IMollieIdealPaymentEvent.providedBy(event)]
+        event = payment_events[0]
+        self.assertEqual(event.context, self.foo)
+        self.assertEqual(event.request, request)
 
 
 class TestMollieConnection(unittest.TestCase):

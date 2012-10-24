@@ -10,4 +10,11 @@
       permission="zope2.View"
       />
 
+  <browser:page
+      for="*"
+      class="collective.mollie.browser.report.ReportMultiplePaymentsStatusView"
+      name="report_multiple_payment_status"
+      permission="zope2.View"
+      />
+
 </configure>
