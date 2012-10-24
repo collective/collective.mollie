@@ -130,6 +130,11 @@ class MollieIdealMultiplePayments(object):
             'profile_key': profile_key,
             'amount': amount,
             'last_update': DateTime(),
+            'curreny': None,
+            'status': None,
+            'paid': None,
+            'consumer': {},
+            'last_status': None,
             }
         return transaction_id, url
 
