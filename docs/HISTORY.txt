@@ -4,6 +4,10 @@ Changelog
 0.3 (unreleased)
 ----------------
 
+- Implement a new report view (ReportMultiplePaymentsStatusView) which
+  can be used for the report URL for Mollie.
+  [markvl]
+
 - Implement a new adapter (MollieIdealMultiplePayments) to register
   multiple payments on a single object.
   [markvl]
