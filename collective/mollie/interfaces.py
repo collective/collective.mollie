@@ -83,6 +83,32 @@ class IMollieIdealPayment(Interface):
         """Retrieve and return the payment status."""
 
 
+class IMollieIdealMultiplePayments(Interface):
+    """Model to store information about multiple payments"""
+
+    def get_banks():
+        """Return a list of bank id and name tuples.
+
+        E.g.: [('0031, 'ABN AMRO'), ('0721', 'Postbank')]
+        """
+
+    def get_payment_url(partner_id, bank_id, amount, message,
+                        report_url, return_url, profile_key=None):
+        """Return a transaction ID and URL to redirect the customer to.
+
+        The customer needs to be directed to the URL to perform the payment.
+
+        Also internally store the data for later reference. The transaction ID
+        that is returned is required to retrieve this data.
+        """
+
+    def get_transaction(transaction_id):
+        """Return a dict with the data stored for a transaction."""
+
+    def get_payment_status(transaction_id):
+        """Retrieve and return the payment status."""
+
+
 class IMollieIdealPaymentEvent(Interface):
     """An event signalling that Mollie an iDeal payment has been processed."""
 

@@ -5,9 +5,9 @@ Introduction
 API`_. This wrapper *can* be used without any further Plone
 integration. However, this package also provides:
 
- - an `adapter`_ to store payment information on objects,
- - a `browser view`_ which can be used to have Mollie report back, and
- - an `event`_ which can be subscribed to to be notified when payment status has been updated.
+ - `Adapters`_ to store payment information on objects.
+ - `Browser views`_ which can be used to have Mollie report back.
+ - An `event`_ which can be subscribed to to be notified when payment status has been updated.
 
 .. _`Mollie iDeal API`: http://www.mollie.nl/support/documentatie/betaaldiensten/ideal/
 
@@ -136,12 +136,13 @@ If you want to integrate iDeal payments in your Plone project, you can
 use the iDeal wrapper as defined in the ``MollieIdeal`` utility which
 was described above.
 
-Adapter
--------
+Adapters
+--------
 
-However, you can also use the adapter defined in the
-``MollieIdealPayment`` class. By using this adapter, information about
-the payment is persistently stored on the adapted objects.
+However, you can also use one of the adapters defined in the package:
+``MollieIdealPayment`` and ``MollieIdealMultiplePayments``. By using
+one of these, information about payments is persistently stored on the
+adapted objects.
 
 You can adapt any object that implements the ``IAttributeAnnotatable``
 interface. For instance::
@@ -153,65 +154,119 @@ interface. For instance::
     >>>     pass
     >>> class Foo(Persistent):
     ...     implements(IFoo, IAttributeAnnotatable)
-    >>> foo = Foo()
 
-This object ``foo`` can now be adapted::
+If you only want to store a single payment on an object, as is common
+for a specific purchase, you can use the ``IMollieIdealPayment``
+interface::
 
     >>> from collective.mollie.interfaces import IMollieIdealPayment
-    >>> foo_payment = IMollieIdealPayment(foo)
+    >>> purchase = Foo()
+    >>> purchase_payment = IMollieIdealPayment(purchase)
 
-And we can request banks, a payment URL and the payment status::
+Now you can request banks, a payment URL and the payment status::
 
-    >>> foo_payment.get_banks()
+    >>> purchase_payment.get_banks()
     [('0031', 'ABN AMRO'), ...]
-    >>> foo_payment.get_payment_url(partner_id='999999',
+    >>> purchase_payment.get_payment_url(partner_id='999999',
     ...     bank_id='9999', amount='123', message='The message',
     ...     report_url='http://example.com/report',
     ...     return_url='http://example.com/return',
     ...     profile_key='999999')
     'http://....'
-    >>> foo_payment.get_payment_status()
+    >>> purchase_payment.get_payment_status()
     'Success'
 
-Note that we do not have to repeat the ``partner_id`` or
+Note that you do not have to repeat the ``partner_id`` or
 ``transaction_id`` when requesting the payment status. This
-information was stored when we requested the payment url and is reused
+information was stored when you requested the payment url and is reused
 for the ``get_payment_status`` call.
 
 As stated earlier, the payment information is stored persistently::
 
-    >>> foo_payment.paid
+    >>> purchase_payment.paid
     True
-    >>> foo_payment.amount
+    >>> purchase_payment.amount
     '123'
-    >>> foo_payment.consumer
+    >>> purchase_payment.consumer
     {'name': 'T. TEST',
      'account': '0123456789',
      'city': 'Testdorp'
      }
 
+In cases where multiple payments need to be stored on a single object,
+you can use the ``IMollieIdealMultiplePayments`` interface. For
+example if you want to allow multiple people to be able to donate to
+some charity::
 
-Browser View
-------------
+    >>> from collective.mollie.interfaces import IMollieIdealMultiplePayments
+    >>> charity = Foo()
+    >>> charity_donations = IMollieIdealMultiplePayments(charity)
+
+As was previously the case, you can also request the available banks::
+
+    >>> charity_payment.get_banks()
+    [('0031', 'ABN AMRO'), ...]
+
+When you retrieve a payment URL, you also get a transaction ID::
+
+    >>> charity_payment.get_payment_url(partner_id='999999',
+    ...     bank_id='9999', amount='123', message='The message',
+    ...     report_url='http://example.com/report',
+    ...     return_url='http://example.com/return',
+    ...     profile_key='999999')
+    ('123...', 'http://....')
+
+This transaction ID is required when you want to access the data for a
+payment::
+
+    >>> charity_payment.get_payment_status('123...')
+    'Success'
+    >>> payment = charity_payment.get_transaction('123...')
+    >>> payment['paid']
+    True
+    >>> payment['amount']
+    '123'
+    >>> payment['consumer']
+    {'name': 'T. TEST',
+     'account': '0123456789',
+     'city': 'Testdorp'
+     }
+
+Note that the way to get to the payment information is also a bit
+different than in the single payment case.
+
+
+Browser Views
+-------------
 
 As described in the section `Check the payment`_, you have to wait with
 checking the payment status until Mollie has pinged the
 ``report_url``.
 
-You can write your own view, but you can also use the one provided by
-``collective.mollie``: the ``ReportPaymentStatusView`` class. This
-view checks whether the ``transaction_id`` from the request matches
-the one stored on the object. If it does, the payment status of the
-object is checked immediately.
+You can write your own view, but you can also use one provided by
+``collective.mollie``: the ``ReportPaymentStatusView`` and
+``ReportMultiplePaymentsStatusView`` classes. These views checks
+whether the ``transaction_id`` from the request matches one stored
+on the object. If it does, the payment status of the object is checked
+immediately.
 
-To use the view, first register it::
+To use the simple payment view, first register it::
 
-  <browser:page
-      for="*"
-      class="collective.mollie.browser.report.ReportPaymentStatusView"
-      name="report_payment_status"
-      permission="zope2.View"
-      />
+    <browser:page
+        for="*"
+        class="collective.mollie.browser.report.ReportPaymentStatusView"
+        name="report_payment_status"
+        permission="zope2.View"
+        />
+
+Alternatively you can use the multiple payment report view::
+
+    <browser:page
+        for="*"
+        class="collective.mollie.browser.report.ReportMultiplePaymentsStatusView"
+        name="report_payment_status"
+        permission="zope2.View"
+        />
 
 (You probably should only register the view for specific
 interfaces. And obviously you can give it any name you want.)
@@ -223,8 +278,8 @@ Then use ``<object>/absolute_url/@@report_payment_status`` as the
 Event
 -----
 
-The view also emits an event: ``MollieIdealPaymentEvent``. So by
-implementing a subscriber in your own package, you can get a
+The report views also emit an event: ``MollieIdealPaymentEvent``. So
+by implementing a subscriber in your own package, you can get a
 notification if the payment information of an object is updated and
 for instance change the workflow state of the object to "paid".
 
